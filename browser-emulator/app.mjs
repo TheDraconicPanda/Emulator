@@ -141,12 +141,14 @@ $('storage').onclick=()=>storageInfo(true);storageInfo();
 async function offline(){try{
   if(window.__readerNativeConfig){$('offline').textContent='Offline app bundled with Reader.';return;}
   if(!isSecureContext||!('serviceWorker'in navigator))throw Error('HTTPS required for offline installation. PC LAN HTTP does not qualify on iPhone.');
-  const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+  const hadController=!!navigator.serviceWorker.controller;
+  if(hadController)navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload(),{once:true});
+  const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+  await registration.update();
+  if(registration.waiting)registration.waiting.postMessage({type:'SKIP_WAITING'});
   await navigator.serviceWorker.ready;
-  if(!navigator.serviceWorker.controller){await new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true}));}
-  // The active cache version is authoritative; a waiting update is not applied mid-game.
+  if(!navigator.serviceWorker.controller)await new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true}));
   const channel=new MessageChannel();channel.port1.onmessage=({data})=>$('offline').textContent=`Offline app ready · ${data.version}. On iPhone, add this page to Home Screen.`;
   navigator.serviceWorker.controller.postMessage({type:'version'},[channel.port2]);
-  if(registration.waiting)$('offline').textContent='Offline app ready. An update will apply after all B1 windows close. Export your save first.';
 }catch(error){$('offline').textContent=error.message||'Offline setup failed. Keep online and retry; do not assume startup is cached.';}}
 offline();renderMetrics();busy=true;controls();
