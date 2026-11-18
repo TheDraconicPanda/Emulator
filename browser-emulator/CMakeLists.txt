@@ -17,7 +17,7 @@ endif()
 add_subdirectory("${MELONDS_SOURCE}" melon)
 add_executable(b1 core/adapter.cpp core/platform.cpp)
 target_link_libraries(b1 PRIVATE core)
-target_include_directories(b1 PRIVATE core ../ios/Tests)
+target_include_directories(b1 PRIVATE core tests)
 target_compile_options(b1 PRIVATE -fwrapv)
 target_link_options(b1 PRIVATE
   --no-entry -O3

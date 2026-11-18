@@ -16,5 +16,5 @@ Their original license notices are retained in source.zip. See upstream LICENSE
 and the notices in those source files. No Delta or Pilas-melonDS binary is used.
 
 The existing Reader and its parser source retain the repository's ISC license.
-The original red/green ARM diagnostic is reused from ios/Tests/TestROM.h under
-GPL-3.0-or-later. Native app and Reader releases retain their existing versions.
+The original red/green ARM diagnostic source is retained in
+browser-emulator/tests/TestROM.h under GPL-3.0-or-later.

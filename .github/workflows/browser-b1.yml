@@ -2,7 +2,7 @@ name: Browser B1 verification
 on:
   push:
     branches: [main, 'migration/**']
-    paths: ['browser-emulator/**', 'reader-dependency/**', 'ios/Tests/TestROM.h', 'docs/browser-b1.md', 'package.json', '.github/workflows/browser-b1.yml']
+    paths: ['browser-emulator/**', 'reader-dependency/**', 'docs/browser-b1.md', 'package.json', '.github/workflows/browser-b1.yml']
   workflow_dispatch:
 permissions:
   contents: read

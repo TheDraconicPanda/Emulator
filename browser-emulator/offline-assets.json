@@ -1,5 +1,5 @@
 {
-  "version": "b1-d59ac423074ae3b8",
+  "version": "b1-36178b50d54ce856",
   "files": [
     "./",
     "index.html",
@@ -45,7 +45,7 @@
     "manifest.webmanifest": "f2b8a8b46db9cf0e0cba939e2c7df8eb0c3afb0f804d9c23bc019f52828f30ab",
     "icon.png": "16c94379c31da29ac92e99e7c8c410638bf47b4c49f86686029b7d34ed378192",
     "icon-512.png": "40a26aaa009c4d1b1e2d404dd91c0c4d95d81a19def2ab958e64a1f1bfb61f4a",
-    "THIRD-PARTY.txt": "aee5b83658068530f8134a928fb8c08a3b7d409207e25f09fcb79a2304b86aa6",
+    "THIRD-PARTY.txt": "f97192a152bc4522fbd32debcf2dd48c5b7c664ee1c8e315b8336d80dac97ef9",
     "vendor/b1.mjs": "ae6bfe672142eddb3225526f7d1b62d653b4bc5088c116ece32ca9b5c258e4e8",
     "vendor/b1.wasm": "4edd597e2e9795547998c8937baf66c954a47958b4f2a705f84c0970ebda6dfb",
     "vendor/build.json": "9d6a90da91bc70850b39168b4f2b6e129d543dc88a11b9164b729b8a554fd017",

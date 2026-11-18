@@ -35,7 +35,7 @@ const entries=[];
 const source=resolve(process.env.MELONDS_SOURCE||'work/research/melonds');
 function files(dir){const r=spawnSync('git',['-C',dir,'ls-files','-z'],{encoding:'utf8'});if(r.status)throw Error('Source tree unavailable');return r.stdout.split('\0').filter(Boolean);}
 for(const name of files(source))if(existsSync(resolve(source,name)))entries.push([`melonDS/${name}`,readFileSync(resolve(source,name))]);
-const own=['browser-emulator/CMakeLists.txt','browser-emulator/core.lock.json','ios/Tests/TestROM.h','package.json','docs/browser-b1.md','reader-dependency/manifest.json'];
+const own=['browser-emulator/CMakeLists.txt','browser-emulator/core.lock.json','browser-emulator/tests/TestROM.h','package.json','docs/browser-b1.md','reader-dependency/manifest.json'];
 // Include new/untracked B1 source during development, from an explicit inventory.
 const appFiles=['.gitattributes','index.html','style.css','app.mjs','worker.mjs','timing.mjs','storage.mjs','audio-worklet.js','manifest.webmanifest','THIRD-PARTY.txt','core/adapter.cpp','core/platform.cpp','core/session.h','scripts/build-core.mjs','scripts/prepare.mjs','scripts/serve.mjs','scripts/iphone-test.ps1'];
 for(const f of [...own,...appFiles.map(f=>'browser-emulator/'+f),...[...visited].map(f=>'reader-dependency/'+relative(reader,f))])if(existsSync(f))entries.push([`emulator/${f.replaceAll('\\','/')}`,readFileSync(f)]);

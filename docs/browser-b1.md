@@ -6,24 +6,23 @@ refresh, account enrollment or streamed gameplay is involved. Sustained game
 performance, thermal behavior and battery use are unproven. Stop the browser
 port if matched phone measurements fail the requirements below.
 
-The Browser B1 implementation is migrated as a standalone application. The
-current native implementation is in `ios/`. Browser and native states are not
-portable. B1.1 adds browser-local full-state checkpoints; native-state
-interoperability, fast-forward, DSi, GBA, multiplayer and an Android port remain
-outside B1. The embedded native Reader uses the pinned snapshot documented in
-`reader-dependency/manifest.json`.
+Browser B1 is migrated as a standalone application. It keeps cartridge saves
+and full-state recovery in separate browser stores. B1.1 adds browser-local
+full-state checkpoints; sharing states with another emulator, fast-forward,
+DSi, GBA, multiplayer and an Android port remain outside B1. Its read-only save
+inspection uses the pinned parser snapshot in `reader-dependency/manifest.json`.
 
 ## Run on this Windows PC
 
 The checked-in WASM and static assets are runnable without compiling. In
-PowerShell, from `C:\Users\willm\OneDrive\Documents\ChatGPT\Pokemon Reader`:
+PowerShell, from the Emulator repository root:
 
 ```powershell
 node browser-emulator/scripts/serve.mjs
 ```
 
 Use [the PC preview](http://127.0.0.1:8080/browser-emulator/). Installed Node
-20.11.0 runs this server; Node 22 is used for verification/builds. Port 8080 can
+20.11.0 runs this server; Node 24 is used for verification/builds. Port 8080 can
 be changed with `$env:PORT='8081'`. The server binds loopback and serves only
 the explicit app asset inventory plus its source archive. It rejects uploads
 and paths into `work/`, source directories and arbitrary repository files.
@@ -77,23 +76,20 @@ before any future change of origin.
    needed for cached offline play. Verify this on the phone before a long run.
 7. Export before removing the icon, clearing data or changing origins. A failed
    export/download in iOS Files is a failed backup check, even if a desktop
-   download worked. Do not delete the original native app or its saves.
+   download worked. Keep an independent backup before removing local app data.
 
 ## Core investigation and reuse
 
 | Candidate, inspected pin | Actual evidence | B1 decision |
 | --- | --- | --- |
-| [melonDS 1.1](https://github.com/melonDS-emu/melonDS/tree/b86390e4428bf38ce4c1ce0e9ca446d6d25955e8), `b86390e4428bf38ce4c1ce0e9ca446d6d25955e8` | Complete source, GPL-3.0-or-later; existing native adapter/diagnostic uses it. New browser build compiles and executes original ARM programs and actual SRAM SPI writes. | Chosen provisionally. Emscripten 4.0.10, interpreter, native-resolution single-threaded software renderer, no SIMD/JIT. One dedicated web worker owns the core. |
+| [melonDS 1.1](https://github.com/melonDS-emu/melonDS/tree/b86390e4428bf38ce4c1ce0e9ca446d6d25955e8), `b86390e4428bf38ce4c1ce0e9ca446d6d25955e8` | Complete source, GPL-3.0-or-later. The browser build compiles and executes original ARM programs and actual SRAM SPI writes. | Chosen provisionally. Emscripten 4.0.10, interpreter, native-resolution single-threaded software renderer, no SIMD/JIT. One dedicated web worker owns the core. |
 | [44670/desmume-wasm](https://github.com/44670/desmume-wasm/tree/1015846aa90741d22bd0e93286a7921e607685c2), `1015846aa90741d22bd0e93286a7921e607685c2` | GPL-2.0 repository; `desmume/wasm-port/main.cpp` exposes frame, framebuffer, save and audio APIs. Its README places the HTML/JS frontend on a separate hosted site. This checkout does not provide a complete pinned frontend/build recipe. The API's frame result is audio production, not measured emulated clock time. | Bounded alternative examined, not incorporated or benchmarked. Rebuilding/adapting its older core and full host would cost more than retaining the already integrated melonDS revision. README phone/FPS claims are not evidence for our games/device. |
 | [josepilas/pilas-melonds](https://github.com/josepilas/pilas-melonds/tree/4aee467df214df7f2f346bcba2219dd7bfafc4b2), `4aee467df214df7f2f346bcba2219dd7bfafc4b2` | Checked-out tree has JS/CSS, compiled core JS/WASM and top-level MPL-2.0 license. The README describes C++ `web_api.cpp`, `web_platform.cpp` and a CMake build which are absent from this tree. JS calls `_pilas_*` exports; raw save export is absent from the advertised UI. | No binary/code copied. Missing corresponding core/build inputs and the top-level license vs melonDS GPL provenance are unresolved. Useful architecture lead, not a reproducible source pin for B1. |
 
-Reused concepts/code: `ios/Core/Core.cpp`'s direct boot, input masks, 48 kHz
-audio and emulated-cycle clock; adapted `ios/Core/Platform.cpp` stubs;
-`ios/Tests/TestROM.h`'s original ARM program; unchanged Reader parsers and synthetic
-fixtures. Native `Library`, UIKit/Metal, checkpoint envelopes and native threaded
-render/audio storage are not browser storage implementations. E4's completed-save
-observer remains available for later read-only Reader integration; B1 does not
-claim its quiet-time cartridge snapshots prove a completed Pokémon transaction.
+The Browser-owned adapter and platform stubs live in `browser-emulator/core/`;
+its original ARM test program is in `browser-emulator/tests/TestROM.h`. The
+parser snapshot and synthetic test fixtures are documented separately. Browser
+cartridge snapshots do not prove a completed Pokémon save transaction.
 
 The compiled core uses FreeBIOS/generated firmware. No proprietary system or
 game files are shipped. See `browser-emulator/THIRD-PARTY.txt`, pinned lock and
@@ -189,8 +185,8 @@ and boxes. Reopen offline and confirm the same progress; repeat a normal save
 and export. Lock/unlock and switch apps during separate runs; resume explicitly.
 Do not overwrite the only original backup. Browser imports only raw normal saves.
 
-For a viable short pass, run matched **30-minute** B1 and native/Delta sessions
-for each game: about 10 min walking, 10 min repeated battles and 10 min mixed
+For a viable short pass, run matched **30-minute** B1 and reference-emulator
+sessions for each game: about 10 min walking, 10 min repeated battles and 10 min mixed
 menus/travel/saving. Repeat each pair in reverse order after cooling. Match
 brightness, sound, starting conditions and ordinary saves. Use airplane mode
 after B1 setup; keep network conditions matched in the comparator. At 5, 15 and
@@ -201,7 +197,7 @@ must be recorded); battery readings come from the phone, not the report.
 The provisional performance target carries the existing plan's **at least 99%
 real-time sustained speed after warmup**, without recurring audio breakup or
 heat-driven deterioration. Before comparing, write down an acceptable numeric
-battery budget from repeated matched native/Delta baselines; do not invent one
+battery budget from repeated matched reference-emulator baselines; do not invent one
 after seeing B1's result. Percentage-point battery readings are coarse; record
 uncertainty and repeat noisy comparisons. If speed, audio, heat or your agreed
 battery budget fails, **stop the browser port**. A further core search or Android

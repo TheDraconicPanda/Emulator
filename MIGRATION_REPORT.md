@@ -1,55 +1,51 @@
-# Emulator repository migration report
+# Browser Emulator migration report
 
-**Status:** local migration and checks complete; branch push, draft review and hosted checks are next. No merge or deployment has been made.
+**Scope:** Browser B1 only, following the user's 17 November 2026 direction to exclude the native iOS app. This supersedes the original two-app scope in `CODEX_MIGRATION.md`; that brief remains unchanged on target `main` as historical authorization.
+
+**Status:** Browser-only tree and local checks are ready. The updated branch still needs to be pushed, then its hosted Browser workflow and draft PR must be checked. No PR has been opened, and nothing has been merged or deployed.
 
 ## Source provenance
 
-- Pokémon Reader checkout inspected at start: clean `main`, `df6665ff10df2b36c887e726d47eea15bfb211dd`. It was not edited by the migration.
-- Current upstream Reader source used for native iOS and the Reader dependency snapshot: `main` at `66ba4a5ef7b5ef1694e50b5aaa061cb6c51fda07`, Reader version `0.27.8`.
-- Browser UI source: open, unmerged Pokémon Reader PR #9, branch `emulator-0.2-immersive-ui`, head `d481008e6fd39ff2f44932a92a7f710786cd13dc` (base `6765803c3a31e8ae2c4117b962f909c35e08c261`). The PR remains open and unmerged.
-- Target `TheDraconicPanda/Emulator` `main` contained only `CODEX_MIGRATION.md` at `90396b8c7bd0f2a42d0c0b01f921d66e3b84e883` when cloned. Work is isolated on `migration/initial-emulator-import`.
+- Original Pokémon Reader checkout at start: clean `main`, `df6665ff10df2b36c887e726d47eea15bfb211dd`. No changes were made there.
+- Current Reader parser source: `main` at `66ba4a5ef7b5ef1694e50b5aaa061cb6c51fda07`, Reader version `0.27.8`.
+- Browser UI source: open, unmerged Reader PR #9, branch `emulator-0.2-immersive-ui`, head `d481008e6fd39ff2f44932a92a7f710786cd13dc`, based on `6765803c3a31e8ae2c4117b962f909c35e08c261`. PR #9 remains open and unmerged.
+- Target Emulator `main` contained only `CODEX_MIGRATION.md` at `90396b8c7bd0f2a42d0c0b01f921d66e3b84e883` when cloned.
 
-PR #9's Browser-related path differences from the selected current Reader main were `browser-emulator/index.html`, `offline-assets.json`, `source.zip`, `style.css`, `sw.js`, and the vendored `vendor/reader/js/saves/gen3-pokemon.js`. The immersive layout and controls were carried over. The offline manifest, worker and source archive were regenerated after standalone path changes. The vendored parser closure was regenerated from the pinned Reader snapshot, excluding the unrelated Gen 3 shiny-edit change. The PR branch's unrelated tree omissions were not imported.
+PR #9's Browser-related differences were `index.html`, `style.css`, `offline-assets.json`, `sw.js` and `source.zip`. Its unrelated Gen 3 shiny parser edit was excluded. The immersive layout and controls were retained; generated offline files and `source.zip` were rebuilt for the standalone tree.
 
-## Moved and copied
+## Included
 
-- Complete `browser-emulator/` and `ios/` application trees, including source, WebAssembly/core assets, PWA files, native tests, scripts and third-party notices.
-- Emulator workflows, Browser B1 protocol/evidence, iPhone E1–E4 plans, runbooks and evidence under `.github/workflows/` and `docs/`.
-- Reader runtime source/data/presentation groups and pinned version metadata under `reader-dependency/`, with exact provenance and refresh instructions in `reader-dependency/manifest.json`.
-- Synthetic save helper and the two Platinum stage fixtures required by Emulator checks under `tests/fixtures/`.
-- Only `docs/platinum-great-marsh.md` is included from Reader docs because the native integration check requests it. Other Reader docs, Atlas audits, Planner notes and Safari-only documentation were excluded. `team-planner/README.md` was excluded as non-runtime documentation.
+- Complete `browser-emulator/`, including source, PWA assets, shipped WASM/core, tests, build/serve scripts and third-party notices.
+- Browser B1 protocol/evidence and its verification workflow.
+- The 16-module Reader parser/data closure in `reader-dependency/`, pinned in `reader-dependency/manifest.json`.
+- The synthetic save helper and Platinum fixture required by Browser tests.
+- The Browser test ROM header under `browser-emulator/tests/TestROM.h`; CMake and the corresponding-source package no longer refer to an `ios/` path.
+
+The native `ios/` app, native workflow, E1–E4 documents, Reader UI/runtime files and native-only fixtures have been removed from the branch's current tree. CMake 3.31.6, Ninja 1.11.1.3 and their pip cache were removed from ignored `work/` as requested. The branch's first migration commit briefly included iOS before this scope change; a follow-up commit removes those files from the current tree. No draft PR was opened while the scope was being revised.
 
 ## Standalone adaptations
 
-- Browser parser closure now reads from `reader-dependency/js/saves/`; its generated vendor paths remain `browser-emulator/vendor/reader/js/saves/`.
-- Browser app no longer loads the Reader app shell or links to the Reader website. It retains the green palette and immersive B1 controls, with Emulator-owned naming and documentation links.
-- Browser `source.zip` now uses `emulator/` paths and includes the dependency manifest; no `pokemon-reader/` path remains in the archive.
-- Native `bundle-reader.py` maps runtime inputs from `reader-dependency/` and copies the migrated `browser-emulator/` tree. Its integrity checks and read-only save overlay are retained.
-- Native parser helpers import from `reader-dependency/`; native bundling reads the pinned Reader version from its copied package metadata.
-- Browser and native workflows target `main` and `migration/**`, with path filters covering their actual standalone inputs. The source-only workflow artifact names were changed to Emulator names.
-- `README.md`, `package.json` and `.gitignore` now describe the standalone repository and keep build/tool state in ignored `work/`.
+- Browser parser preparation reads only from `reader-dependency/js/` and emits the existing `browser-emulator/vendor/reader/` layout.
+- Browser UI no longer loads the Reader menu or links to the Reader website. It keeps the immersive green layout with Emulator naming and documentation links.
+- The browser core includes `browser-emulator/tests/` for its test ROM. The source ZIP uses `emulator/` paths and has no `pokemon-reader/` prefix.
+- The workflow targets `main` and `migration/**`, and watches Browser B1/parser inputs only.
+- Root README and package scripts describe Browser B1 only.
 
 ## Validation
 
-Passed locally:
+Passed locally against the Browser-only tree:
 
-- `node browser-emulator/scripts/prepare.mjs` — generated 32 offline assets and a 774-entry source ZIP (773 app/core source entries plus `SOURCE-BUILD.txt`).
-- Browser B1 tests under Node `v24.22.1`: `node --test browser-emulator/tests/audio.test.mjs browser-emulator/tests/browser.test.mjs browser-emulator/tests/core.test.mjs` — **9 passed, 0 failed**, including real Chromium coverage, offline restart, save import/export, checkpoint restore and parser closure/hash checks.
-- `ios/scripts/bundle-reader.py work/migration-check/Reader` — **2,064 files**, 34,992,981 bytes; all bundle hashes verified. Browser WASM, Reader app and required Great Marsh reference were present. Only the selected Great Marsh document was bundled.
-- `ios/scripts/native-fixtures.cjs` and `ios/scripts/reader-fixtures.cjs` — generated four synthetic bridge saves; the pinned standalone Reader parser decoded all four.
-- Source archive audit — 773 corresponding-source entries, all under standalone paths; no `pokemon-reader/` archive prefix.
+- `node browser-emulator/scripts/prepare.mjs` — **32 offline assets**, **774-entry** corresponding-source ZIP (773 app/core inputs plus `SOURCE-BUILD.txt`).
+- Node `v24.22.1`: `node --test browser-emulator/tests/audio.test.mjs browser-emulator/tests/browser.test.mjs browser-emulator/tests/core.test.mjs` — **9 passed, 0 failed**, including real Chromium, offline restart, save import/export, checkpoint restore, parser closure and hash checks.
+- The source ZIP was checked to use standalone `emulator/` paths only, with no `pokemon-reader/` prefix.
+- Browser tests detected no required external Reader requests. Parser modules are supplied from the pinned snapshot.
 
-Local environment limits:
-
-- CMake `3.31.6` and Ninja `1.11.1.3` are installed only under ignored target `work/tools/`. Native CMake configuration was attempted, but this Windows host has no C or C++ compiler; CTest and the native C++/WebKit smoke checks could not run locally. The target branch's Linux/macOS workflows must pass before review handoff is complete.
-- iOS SDK build/signing and iPhone installation, gameplay, persistence, energy and battery checks are not available on this Windows host and remain unaccepted. Existing E1–E4 evidence is historical source evidence, not a build from this migration branch.
-- Initial system Node `v20.11.0` lacks the global WebSocket API used by the existing Chromium test; the full browser suite passed with the available Node `v24.22.1` runtime.
-- The entire Reader regression suite was not run; the Reader checkout remains untouched.
+System Node `v20.11.0` lacks the global WebSocket API used by the existing Chromium test; Node `v24.22.1` passed. Native/iOS builds and checks are out of scope. Browser iPhone WebKit, game compatibility, persistence and battery/energy acceptance remain untested; no device acceptance is claimed.
 
 ## Reader and integration boundaries
 
-The original Pokémon Reader checkout's tracked Git status was clean before migration. No Git operations or edits were performed in that checkout; upstream refs were inspected in a separate clone under its ignored `work/` directory. PR #9 remains open and unmerged. No Reader links, workflow changes, deployments, releases or app-to-app integration were added. No iPhone acceptance is claimed.
+The original Pokémon Reader checkout's tracked status was clean before migration. Upstream refs were inspected in a separate clone under ignored `work/`; no Git operations or edits were performed in the original checkout. PR #9 remains open and unmerged. No Reader workflow, deployment, release or app-to-app integration was added. Historical Reader URLs remain only in source evidence or manual validation instructions, not as required Browser runtime assets.
 
 ## Review handoff
 
-The migration branch is `migration/initial-emulator-import`, based on target `main` commit `90396b8c7bd0f2a42d0c0b01f921d66e3b84e883`. The draft PR URL and hosted workflow results will be recorded here after the branch is pushed and checks finish. The PR will remain unmerged for user review.
+Branch: `migration/initial-emulator-import`, based on target `main` at `90396b8c7bd0f2a42d0c0b01f921d66e3b84e883`. Record the final branch commit, draft PR URL and hosted Browser workflow result here after pushing the scope update. Keep the PR unmerged for user review.

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Browser adapter patterned after ios/Core/Core.cpp; no state or Reader API.
+// Browser-only adapter around melonDS; no native state or Reader API.
 #include "session.h"
 #include "Args.h"
 #include "NDS.h"
 #include "GPU3D_Soft.h"
 #include "Savestate.h"
-#include "../../ios/Tests/TestROM.h"
+#include "TestROM.h"
 #include <memory>
 #include <algorithm>
 #include <ctime>
