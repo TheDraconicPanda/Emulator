@@ -76,3 +76,29 @@ body.playing .dpad,body.playing .face{grid-template:repeat(3,44px)/repeat(3,48px
 }
 
 body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.muted .audio-icon .sound-waves{display:none}body.playing .audio-toggle.muted .audio-icon .mute-slash{display:block}
+
+
+/* Fine positioning pass from phone screenshot: separate shoulders from the display,
+   center the three utility buttons, and lower the hand controls slightly. */
+@media(orientation:portrait){
+ body.playing .shoulders{
+   top:0;
+   display:grid;
+   grid-template-columns:1fr auto auto auto 1fr;
+   align-items:center;
+   justify-items:center;
+   gap:clamp(8px,2.5vw,16px);
+ }
+ body.playing .shoulders [data-key="9"]{grid-column:1;justify-self:start}
+ body.playing .shoulders #pause{grid-column:2;margin:0}
+ body.playing .shoulders #quick-save{grid-column:3}
+ body.playing .shoulders #audio-toggle{grid-column:4}
+ body.playing .shoulders [data-key="8"]{grid-column:5;justify-self:end}
+ body.playing .hands{margin-top:14px}
+ body.playing .system{margin-top:12px;gap:14px}
+}
+@media(orientation:landscape){
+ body.playing .shoulders{display:flex}
+ body.playing .hands{margin-top:12px}
+ body.playing .system{margin-top:8px}
+}
