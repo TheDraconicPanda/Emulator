@@ -1,0 +1,10 @@
+{
+  "name": "pokemon-emulator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:browser": "node browser-emulator/scripts/prepare.mjs",
+    "serve:browser": "node browser-emulator/scripts/serve.mjs",
+    "test": "node --test browser-emulator/tests/*.test.mjs"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "coreRevision": "b86390e4428bf38ce4c1ce0e9ca446d6d25955e8",
+  "emscripten": "4.0.10",
+  "hashes": {
+    "b1.mjs": "ae6bfe672142eddb3225526f7d1b62d653b4bc5088c116ece32ca9b5c258e4e8",
+    "b1.wasm": "4edd597e2e9795547998c8937baf66c954a47958b4f2a705f84c0970ebda6dfb"
+  }
+}
