@@ -2,7 +2,7 @@
 
 **Scope:** Browser B1 only, following the user's 17 November 2026 direction to exclude the native iOS app. This supersedes the original two-app scope in `CODEX_MIGRATION.md`; that brief remains unchanged on target `main` as historical authorization.
 
-**Status:** Browser-only tree and local checks are ready. The updated branch still needs to be pushed, then its hosted Browser workflow and draft PR must be checked. No PR has been opened, and nothing has been merged or deployed.
+**Status:** Browser-only migration is pushed for review. Draft PR #1 is open and unmerged. The hosted Browser B1 verification workflow passed on commit `368d51fc05bbb866913adc2ee7374ae3418af9c8`. Nothing has been merged or deployed.
 
 ## Source provenance
 
@@ -21,7 +21,7 @@ PR #9's Browser-related differences were `index.html`, `style.css`, `offline-ass
 - The synthetic save helper and Platinum fixture required by Browser tests.
 - The Browser test ROM header under `browser-emulator/tests/TestROM.h`; CMake and the corresponding-source package no longer refer to an `ios/` path.
 
-The native `ios/` app, native workflow, E1–E4 documents, Reader UI/runtime files and native-only fixtures have been removed from the branch's current tree. CMake 3.31.6, Ninja 1.11.1.3 and their pip cache were removed from ignored `work/` as requested. The branch's first migration commit briefly included iOS before this scope change; a follow-up commit removes those files from the current tree. No draft PR was opened while the scope was being revised.
+The native `ios/` app, native workflow, E1-E4 documents, Reader UI/runtime files and native-only fixtures have been removed from the branch's current tree. CMake 3.31.6, Ninja 1.11.1.3 and their pip cache were removed from ignored `work/` as requested. The branch's first migration commit briefly included iOS before this scope change; a follow-up commit removes those files from the current tree. The resulting branch has no `ios/` tree.
 
 ## Standalone adaptations
 
@@ -35,10 +35,11 @@ The native `ios/` app, native workflow, E1–E4 documents, Reader UI/runtime fil
 
 Passed locally against the Browser-only tree:
 
-- `node browser-emulator/scripts/prepare.mjs` — **32 offline assets**, **774-entry** corresponding-source ZIP (773 app/core inputs plus `SOURCE-BUILD.txt`).
-- Node `v24.22.1`: `node --test browser-emulator/tests/audio.test.mjs browser-emulator/tests/browser.test.mjs browser-emulator/tests/core.test.mjs` — **9 passed, 0 failed**, including real Chromium, offline restart, save import/export, checkpoint restore, parser closure and hash checks.
+- `node browser-emulator/scripts/prepare.mjs` - **32 offline assets**, **774-entry** corresponding-source ZIP (773 app/core inputs plus `SOURCE-BUILD.txt`).
+- Node `v24.22.1`: `node --test browser-emulator/tests/audio.test.mjs browser-emulator/tests/browser.test.mjs browser-emulator/tests/core.test.mjs` - **9 passed, 0 failed**, including real Chromium, offline restart, save import/export, checkpoint restore, parser closure and hash checks.
 - The source ZIP was checked to use standalone `emulator/` paths only, with no `pokemon-reader/` prefix.
 - Browser tests detected no required external Reader requests. Parser modules are supplied from the pinned snapshot.
+- GitHub Actions [Browser B1 verification](https://github.com/TheDraconicPanda/Emulator/actions/runs/44235702918) - **passed** for `368d51fc05bbb866913adc2ee7374ae3418af9c8`.
 
 System Node `v20.11.0` lacks the global WebSocket API used by the existing Chromium test; Node `v24.22.1` passed. Native/iOS builds and checks are out of scope. Browser iPhone WebKit, game compatibility, persistence and battery/energy acceptance remain untested; no device acceptance is claimed.
 
@@ -48,4 +49,10 @@ The original Pokémon Reader checkout's tracked status was clean before migratio
 
 ## Review handoff
 
-Branch: `migration/initial-emulator-import`, based on target `main` at `90396b8c7bd0f2a42d0c0b01f921d66e3b84e883`. Record the final branch commit, draft PR URL and hosted Browser workflow result here after pushing the scope update. Keep the PR unmerged for user review.
+- Branch: `migration/initial-emulator-import`
+- Base: target `main` at `90396b8c7bd0f2a42d0c0b01f921d66e3b84e883`
+- Latest commit when this report was prepared: `368d51fc05bbb866913adc2ee7374ae3418af9c8`
+- Draft PR #1: https://github.com/TheDraconicPanda/Emulator/pull/1
+- Hosted verification: passed, linked above.
+
+Keep the PR unmerged for user review.
