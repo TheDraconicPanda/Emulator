@@ -1,5 +1,5 @@
 {
-  "version": "b1-6a292e7a7ff163c5",
+  "version": "b1-6a3fb8c252ecb94c",
   "files": [
     "./",
     "index.html",
@@ -37,7 +37,7 @@
   "hashes": {
     "index.html": "e66510d6cca89ddc69683f0a81648384ec9bbb1b1d983ab439800ad8bdeca33a",
     "style.css": "4c5a9d3bf4187b745e005c96bb3b18f0d4f383d0089cb6e17b4e9a541b4e053d",
-    "app.mjs": "af167fa5ef8c3ab4835b2a8a1617a8f70c8839d045e423695d933140e39098c6",
+    "app.mjs": "3e0d280070c60411efc1080de4f6406ceb0ba0b7dc22565c103d8a80f5d0003c",
     "worker.mjs": "515497617d317dbcf1e5f2602ef817b9e3ac4124dfc1b9fba0d1920863a65e2c",
     "timing.mjs": "186fb1e3fec43f21736bdd59e2fd6dd4ad090130b86a552ab8f0d5a2caa581af",
     "storage.mjs": "e1a0f3a5e69a05f753c8cd9c57aa56a8b024a67e15089f9b62a89f48383953e3",
