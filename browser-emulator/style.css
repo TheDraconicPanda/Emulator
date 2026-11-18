@@ -74,3 +74,5 @@ body.playing .dpad,body.playing .face{grid-template:repeat(3,44px)/repeat(3,48px
  body.playing .shoulders #pause{margin-left:0}
  body.playing .hands{margin:8px 0}
 }
+
+body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.muted .audio-icon .sound-waves{display:none}body.playing .audio-toggle.muted .audio-icon .mute-slash{display:block}
