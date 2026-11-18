@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id);
 const status=message=>$('status').textContent=message;
 const worker=new Worker(new URL('./worker.mjs',import.meta.url),{type:'module'});
 let gameCode=null,loaded=false,isDiagnostic=false,running=false,busy=false,pressed=new Map(),keyboard=new Set(),touch=[-1,-1],checkpointFailures=new Set();
-let audio=null,audioNode=null,audioHealth={},metrics={},saveHealth={},stateHealth={},presentations=0,presentationStart=0,presentationRate=0;
+let audio=null,audioNode=null,audioGain=null,audioMuted=false,audioHealth={},metrics={},saveHealth={},stateHealth={},presentations=0,presentationStart=0,presentationRate=0;
 const capabilities={secureContext:isSecureContext,wasm:typeof WebAssembly==='object',worker:typeof Worker==='function',
   audioWorklet:typeof AudioWorkletNode==='function',indexedDB:!!globalThis.indexedDB,serviceWorker:'serviceWorker'in navigator,
   persistentStorage:!!navigator.storage?.persist,standalone:matchMedia('(display-mode: standalone)').matches||!!navigator.standalone,
@@ -33,7 +33,7 @@ function showCheckpointChoices(options={}){
 async function startAudio(){
   if(!globalThis.AudioContext||!capabilities.audioWorklet)throw Error('AudioWorklet unavailable. Use a current Safari over HTTPS.');
   if(!audio){audio=new AudioContext({sampleRate:48000,latencyHint:'interactive'});await audio.audioWorklet.addModule('./audio-worklet.js');
-    audioNode=new AudioWorkletNode(audio,'reader-b1-audio',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});audioNode.connect(audio.destination);
+    audioNode=new AudioWorkletNode(audio,'reader-b1-audio',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});audioGain=audio.createGain();audioGain.gain.value=audioMuted?0:1;audioNode.connect(audioGain);audioGain.connect(audio.destination);
     audioNode.port.onmessage=({data})=>{audioHealth={...data,sampleRate:audio.sampleRate,state:audio.state};renderMetrics();};
     audio.onstatechange=()=>{if(running&&audio.state!=='running')pause();};
   }
@@ -67,6 +67,9 @@ $('rom').onchange=()=>action(async()=>{const file=$('rom').files[0];if(!file)ret
 for(const id of ['reopen','diagnostic'])$(id).onclick=()=>{pause();busy=true;controls();send(id);};
 $('resume').onclick=()=>action(async()=>{await startAudio();send('resume');});
 $('pause').onclick=pause;
+function updateAudioToggle(){const button=$('audio-toggle');button.textContent=audioMuted?'Unmute':'Mute';button.setAttribute('aria-pressed',String(audioMuted));button.setAttribute('aria-label',audioMuted?'Unmute game audio':'Mute game audio');button.title=audioMuted?'Unmute game audio':'Mute game audio';}
+$('audio-toggle').onclick=()=>{audioMuted=!audioMuted;if(audioGain)audioGain.gain.setTargetAtTime(audioMuted?0:1,audio?.currentTime||0,.012);updateAudioToggle();};
+updateAudioToggle();
 $('quick-save').onclick=()=>{if($('quick-save').disabled)return;$('quick-save').disabled=true;$('state-status').textContent='Capturing Quick Save…';send('quick-save');};
 $('retry-state').onclick=()=>{const slot=checkpointFailures.values().next().value;if(slot)send('retry-state',{slot});};
 $('resume-latest').onclick=()=>{busy=true;controls();send('restore-state',{slot:$('resume-latest').dataset.slot});};
