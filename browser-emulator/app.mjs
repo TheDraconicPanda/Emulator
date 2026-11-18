@@ -67,7 +67,7 @@ $('rom').onchange=()=>action(async()=>{const file=$('rom').files[0];if(!file)ret
 for(const id of ['reopen','diagnostic'])$(id).onclick=()=>{pause();busy=true;controls();send(id);};
 $('resume').onclick=()=>action(async()=>{await startAudio();send('resume');});
 $('pause').onclick=pause;
-function updateAudioToggle(){const button=$('audio-toggle');button.textContent=audioMuted?'Unmute':'Mute';button.setAttribute('aria-pressed',String(audioMuted));button.setAttribute('aria-label',audioMuted?'Unmute game audio':'Mute game audio');button.title=audioMuted?'Unmute game audio':'Mute game audio';}
+function updateAudioToggle(){const button=$('audio-toggle');button.classList.toggle('muted',audioMuted);button.setAttribute('aria-pressed',String(audioMuted));button.setAttribute('aria-label',audioMuted?'Unmute game audio':'Mute game audio');button.title=audioMuted?'Unmute game audio':'Mute game audio';}
 $('audio-toggle').onclick=()=>{audioMuted=!audioMuted;if(audioGain)audioGain.gain.setTargetAtTime(audioMuted?0:1,audio?.currentTime||0,.012);updateAudioToggle();};
 updateAudioToggle();
 $('quick-save').onclick=()=>{if($('quick-save').disabled)return;$('quick-save').disabled=true;$('state-status').textContent='Capturing Quick Save…';send('quick-save');};
