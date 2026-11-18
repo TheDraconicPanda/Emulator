@@ -64,9 +64,9 @@ body.playing .shoulders #quick-save{margin-left:0}
 body.playing .system{gap:10px;margin:2px 0 0}
 body.playing .system button{width:38px;min-width:38px;height:32px;min-height:32px;padding:4px;border-radius:50%;font-size:15px}
 body.playing .hands{margin:8px 0 0}
-body.playing .dpad,body.playing .face{grid-template:repeat(3,44px)/repeat(48px,48px)}
+body.playing .dpad,body.playing .face{grid-template:repeat(3,44px)/repeat(3,48px)}
 @media(max-height:760px) and (orientation:portrait){
- body.playing .dpad,body.playing .face{grid-template:repeat(3,38px)/repeat(42px,42px)}
+ body.playing .dpad,body.playing .face{grid-template:repeat(3,38px)/repeat(3,42px)}
  body.playing .hands{margin-top:4px}
 }
 @media(orientation:landscape){
