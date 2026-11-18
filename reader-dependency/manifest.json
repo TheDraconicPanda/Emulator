@@ -1,0 +1,25 @@
+{
+  "upstreamRepository": "https://github.com/TheDraconicPanda/pokemon-reader",
+  "sourceCommit": "66ba4a5ef7b5ef1694e50b5aaa061cb6c51fda07",
+  "sourceBranch": "main",
+  "readerVersion": "0.27.8",
+  "groups": [
+    {
+      "paths": ["index.html", "js/", "css/", "assets/", "team-planner/", "pokedex/", "atlas/", "safari-zone/", "trade/", "docs/platinum-great-marsh.md", "package.json"],
+      "kind": "runtime source, data and presentation assets",
+      "reason": "The embedded native Reader serves these existing routes locally; the version and modules preserve the validated completed-save, save profile and read-only integration behavior. The Great Marsh reference is retained because the native integration check requests it. Other Reader docs, Atlas audits, Planner notes and Safari-only docs are excluded."
+    },
+    {
+      "paths": ["tests/fixtures/soulsilver.cjs", "tests/fixtures/gen4/platinum/early.sav", "tests/fixtures/gen4/platinum/middle.sav"],
+      "kind": "synthetic test helper and known-good synthetic save fixtures",
+      "reason": "Browser and native integration checks use these fixtures; they are test data, not personal saves."
+    }
+  ],
+  "excluded": [
+    {
+      "paths": ["docs/** except docs/platinum-great-marsh.md", "team-planner/README.md"],
+      "reason": "Not required by the embedded app runtime or migration checks; this avoids importing unrelated Reader docs, Atlas audits, Planner notes and Safari-only documentation."
+    }
+  ],
+  "refresh": "Choose and record a reviewed Pokémon Reader commit, replace only the listed snapshot groups, update this manifest, rerun browser preparation and all Browser B1 and native host checks, then inspect the standalone dependency audit. Do not add a Reader submodule or require a sibling checkout."
+}
