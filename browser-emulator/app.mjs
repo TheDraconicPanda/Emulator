@@ -43,12 +43,41 @@ function pause(){send('pause');clearInput();audioNode?.port.postMessage({reset:t
 function clearInput(){pressed.clear();keyboard.clear();touch=[-1,-1];document.querySelectorAll('.pressed').forEach(e=>e.classList.remove('pressed'));input();}
 function input(){let keys=0;for(const k of [...pressed.values(),...keyboard])keys|=1<<k;send('input',{keys,touch});}
 const keyMap={KeyZ:0,KeyX:1,ShiftLeft:2,ShiftRight:2,Enter:3,ArrowRight:4,ArrowLeft:5,ArrowUp:6,ArrowDown:7,KeyW:8,KeyQ:9,KeyS:10,KeyA:11};
-document.querySelectorAll('[data-key]').forEach(button=>{
-  button.addEventListener('pointerdown',event=>{event.preventDefault();button.setPointerCapture(event.pointerId);pressed.set(event.pointerId,Number(button.dataset.key));button.classList.add('pressed');input();});
-  const up=event=>{pressed.delete(event.pointerId);button.classList.remove('pressed');input();};
-  button.addEventListener('pointerup',up);button.addEventListener('pointercancel',up);button.addEventListener('lostpointercapture',up);
-  button.addEventListener('contextmenu',e=>e.preventDefault());
+const controlSurface=document.querySelector('.controls');
+const activePointers=new Map();
+function buttonAtPoint(x,y){
+  const target=document.elementFromPoint(x,y);
+  const button=target?.closest?.('.controls [data-key]');
+  return button&&controlSurface.contains(button)?button:null;
+}
+function refreshPressedButtons(){
+  document.querySelectorAll('.controls [data-key]').forEach(button=>button.classList.toggle('pressed',
+    [...pressed.values()].includes(Number(button.dataset.key))));
+}
+function updatePointer(event){
+  if(!activePointers.has(event.pointerId))return;
+  const button=buttonAtPoint(event.clientX,event.clientY);
+  const key=button?Number(button.dataset.key):null;
+  if(key===null)pressed.delete(event.pointerId);else pressed.set(event.pointerId,key);
+  activePointers.set(event.pointerId,key);
+  refreshPressedButtons();input();
+}
+controlSurface.addEventListener('pointerdown',event=>{
+  const button=buttonAtPoint(event.clientX,event.clientY);
+  if(!button)return;
+  event.preventDefault();
+  activePointers.set(event.pointerId,null);
+  controlSurface.setPointerCapture(event.pointerId);
+  updatePointer(event);
 });
+controlSurface.addEventListener('pointermove',updatePointer);
+function releasePointer(event){
+  if(!activePointers.has(event.pointerId))return;
+  activePointers.delete(event.pointerId);pressed.delete(event.pointerId);
+  refreshPressedButtons();input();
+}
+for(const name of ['pointerup','pointercancel','lostpointercapture'])controlSurface.addEventListener(name,releasePointer);
+controlSurface.addEventListener('contextmenu',event=>event.preventDefault());
 addEventListener('keydown',event=>{if(keyMap[event.code]===undefined||!running)return;event.preventDefault();keyboard.add(keyMap[event.code]);input();});
 addEventListener('keyup',event=>{if(keyMap[event.code]===undefined)return;keyboard.delete(keyMap[event.code]);input();});
 let touchPointer=null;
