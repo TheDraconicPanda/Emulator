@@ -110,3 +110,90 @@ body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.mut
  body.playing .hands{margin-top:24px}
  body.playing .system{margin-top:2px}
 }
+
+
+/* Dedicated landscape console: two full-size DS screens above a horizontal control deck. */
+@media(orientation:landscape) and (min-width:600px){
+ body.playing .console{
+   flex-direction:column;
+   align-items:stretch;
+   justify-content:flex-start;
+   gap:0;
+   padding:max(6px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+ }
+ body.playing .screens{
+   flex:0 0 auto;
+   width:100%;
+   flex-direction:row;
+   align-items:center;
+   justify-content:center;
+   gap:clamp(8px,1.5vw,18px);
+   min-height:0;
+ }
+ body.playing figure{
+   width:min(50%,calc((100dvh - 190px)*1.333333),calc((100vw - 48px)*.5));
+   max-width:none;
+   flex:0 1 50%;
+ }
+ body.playing canvas{width:100%;height:auto;max-height:none}
+ body.playing .controls{
+   display:grid;
+   grid-template-columns:minmax(120px,1fr) minmax(250px,auto) minmax(120px,1fr);
+   grid-template-rows:auto auto;
+   align-items:center;
+   justify-content:stretch;
+   gap:clamp(4px,1vh,10px) clamp(12px,3vw,40px);
+   width:100%;
+   max-width:900px;
+   margin:0 auto;
+   padding:0 1vw max(2px,env(safe-area-inset-bottom));
+ }
+ body.playing .shoulders{
+   position:relative;
+   grid-column:1 / -1;
+   grid-row:1;
+   top:auto;
+   left:auto;
+   right:auto;
+   display:grid;
+   grid-template-columns:1fr auto auto auto 1fr;
+   justify-items:center;
+   align-items:center;
+   gap:clamp(8px,2vw,22px);
+   width:100%;
+   margin:0;
+   pointer-events:auto;
+ }
+ body.playing .shoulders [data-key="9"]{grid-column:1;justify-self:start}
+ body.playing .shoulders #pause{grid-column:2;margin:0}
+ body.playing .shoulders #quick-save{grid-column:3}
+ body.playing .shoulders #audio-toggle{grid-column:4}
+ body.playing .shoulders [data-key="8"]{grid-column:5;justify-self:end}
+ body.playing .shoulders button{width:clamp(44px,6vw,64px);height:34px;min-height:34px}
+ body.playing .shoulders .icon-button{width:40px;min-width:40px;height:36px;min-height:36px}
+ body.playing .hands{display:contents}
+ body.playing .dpad{grid-column:1;grid-row:2;justify-self:start}
+ body.playing .face{grid-column:3;grid-row:2;justify-self:end}
+ body.playing .system{
+   grid-column:2;
+   grid-row:2;
+   display:flex;
+   justify-content:center;
+   align-self:center;
+   gap:clamp(14px,2vw,28px);
+   margin:0;
+   padding:0;
+   pointer-events:auto;
+ }
+ body.playing .dpad,body.playing .face{grid-template:repeat(3,clamp(36px,7vh,48px))/repeat(3,clamp(38px,6vw,48px));gap:3px}
+ body.playing .controls button{min-width:clamp(38px,5vw,48px);min-height:clamp(36px,7vh,48px)}
+ body.playing .system button{width:48px;height:40px;min-height:40px;border-radius:20px}
+}
+@media(orientation:landscape) and (min-width:600px) and (max-height:420px){
+ body.playing .screens{gap:6px}
+ body.playing figure{width:min(50%,calc((100dvh - 158px)*1.333333),calc((100vw - 36px)*.5))}
+ body.playing .controls{grid-template-columns:minmax(110px,1fr) minmax(220px,auto) minmax(110px,1fr);gap:3px 10px}
+ body.playing .shoulders{gap:6px}
+ body.playing .dpad,body.playing .face{grid-template:repeat(3,34px)/repeat(3,38px)}
+ body.playing .controls button{min-width:38px;min-height:34px}
+}
