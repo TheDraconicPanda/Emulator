@@ -197,3 +197,6 @@ body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.mut
  body.playing .dpad,body.playing .face{grid-template:repeat(3,34px)/repeat(3,38px)}
  body.playing .controls button{min-width:38px;min-height:34px}
 }
+
+/* Landscape control reach: move the D-pad and face buttons inward and upward. */
+@media(orientation:landscape) and (min-width:600px){body.playing .dpad{transform:translate(32px,-20px)}body.playing .face{transform:translate(-32px,-20px)}}
