@@ -100,7 +100,7 @@ $('rom').onchange=()=>action(async()=>{const file=$('rom').files[0];if(!file)ret
 for(const id of ['reopen','diagnostic'])$(id).onclick=()=>{pause();busy=true;controls();send(id);};
 $('resume').onclick=()=>action(async()=>{await startAudio();send('resume');});
 $('pause').onclick=pause;
-$('reader-link').addEventListener('click',event=>{event.preventDefault();readerTab=window.open('about:blank','_blank');if(!readerTab){status('Allow pop-ups to open Pokémon Reader after the game is safely paused.');return;}readerHandoff=true;busy=true;controls();status('Pausing and saving the current emulator state before opening Reader…');send('pause-for-reader');});
+$('reader-link').addEventListener('click',event=>{event.preventDefault();readerHandoff=true;readerTab=window.open('about:blank','_blank');if(!readerTab){readerHandoff=false;status('Allow pop-ups to open Pokémon Reader after the game is safely paused.');return;}busy=true;controls();status('Pausing and saving the current emulator state before opening Reader…');send('pause-for-reader');});
 function updateAudioToggle(){const button=$('audio-toggle');button.classList.toggle('muted',audioMuted);button.setAttribute('aria-pressed',String(audioMuted));button.setAttribute('aria-label',audioMuted?'Unmute game audio':'Mute game audio');button.title=audioMuted?'Unmute game audio':'Mute game audio';}
 $('audio-toggle').onclick=()=>{audioMuted=!audioMuted;if(audioGain)audioGain.gain.setTargetAtTime(audioMuted?0:1,audio?.currentTime||0,.012);updateAudioToggle();};
 updateAudioToggle();
