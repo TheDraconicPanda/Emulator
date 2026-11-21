@@ -121,6 +121,13 @@ onmessage=({data})=>{
       case 'resume':if(running)break;if(!key)throw Error('Choose a ROM or run the diagnostic first.');if(saveQueue?.error)throw Error('Retry cartridge-save persistence or export before resuming.');
         if(!diagnostic)await store.lease(key);metrics.reset(performance.now());pacer.reset(performance.now());running=true;tick();startAutoCheckpoints();send('running');break;
       case 'pause':pause();try{await copySave();}catch{}if(key&&!diagnostic)try{await saveCheckpoint('auto');}catch(error){checkpointInfo('auto',{state:'failed',at:Date.now(),message:error.message});}break;
+      case 'pause-for-reader':
+        pause();
+        if(saveQueue)await copySave(true);
+        if(saveQueue)await saveQueue.flush();
+        if(key&&!diagnostic)await saveCheckpoint('auto');
+        send('reader-ready');
+        break;
       case 'persist':if(saveQueue){await store.lease(key);await saveQueue.flush();await copySave(true);}break;
       case 'quick-save':try{await saveCheckpoint('quick');}catch(error){checkpointInfo('quick',{state:'failed',at:Date.now(),message:error.message});}break;
       case 'restore-state':await restoreCheckpoint(data.slot);break;
@@ -138,4 +145,4 @@ onmessage=({data})=>{
     }
   }).catch(error=>{pause();send('error',{message:error.message.startsWith('This ROM')||error.message.startsWith('No retained')||error.message.startsWith('Choose')||error.message.startsWith('Load the matching')||error.message.startsWith('Retry persistence')?error.message:'Operation failed. Storage may be full or unavailable. Current data is retained where possible; export your save before reloading.'});});
 };
-send('ready');
+(async()=>{const last=await store.get('roms','last');const retained=!!(last&&await store.get('roms',last));send('ready',{hasRetainedROM:retained});})().catch(()=>send('ready',{hasRetainedROM:false}));
