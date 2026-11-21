@@ -1,5 +1,5 @@
 {
-  "version": "b1-e51ca3e90248a25a",
+  "version": "b1-3af99742d04e3c8b",
   "files": [
     "./",
     "index.html",
@@ -35,10 +35,10 @@
     "vendor/reader/js/data/games/leafgreen/reader-reference.js"
   ],
   "hashes": {
-    "index.html": "933b9339d1ff8e2f504aefcc78ad5035e5a7ddc9f1218ae529d29f9c570efa00",
-    "style.css": "2cfd7ff5186e27f1600dbead845f2a17b61548b2f993484cce18ec93b89fe6f9",
-    "app.mjs": "d15e631ea2f12cf0cc0751098ef2d85db5baad09e77d5800135ea847cb872274",
-    "worker.mjs": "b066af433b7ce6c006ebebf9f2b4e3b3f6dbfa012ef37d2797c3f5565847a33d",
+    "index.html": "e2fcca56b2d1b9a1f9f981a5ae7a4ec56ecdeded22e5ce509ebd4cf6cabbd1ab",
+    "style.css": "b1e20356f4ccaf4dfdd269db71e41dda60023bee145cee5f8b6794a2eacf3e71",
+    "app.mjs": "1e3269ca98f87cacf29b589b5c33095cea8866305a79e36c9852b739f717fd4b",
+    "worker.mjs": "97b5e9675aa9f728890ae98f99af5ba5f04dfe9a1279c664e303a081837e4a9d",
     "timing.mjs": "186fb1e3fec43f21736bdd59e2fd6dd4ad090130b86a552ab8f0d5a2caa581af",
     "storage.mjs": "e1a0f3a5e69a05f753c8cd9c57aa56a8b024a67e15089f9b62a89f48383953e3",
     "audio-worklet.js": "fca4ca28a7991fa32259794b92c8a4f48b8d8b6bf1303dc860507841e3e393a4",
