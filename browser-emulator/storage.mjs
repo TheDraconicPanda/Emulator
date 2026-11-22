@@ -22,6 +22,10 @@ export class Store {
     r.onblocked=()=>reject(Error('Close other B1 windows before opening storage.'));
   });}
   get(store,key){return new Promise((resolve,reject)=>{const r=this.db.transaction(store).objectStore(store).get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+  getLastROM(){return new Promise((resolve,reject)=>{const tx=this.db.transaction('roms'),store=tx.objectStore('roms');let result=null;
+    const last=store.get('last');last.onsuccess=()=>{if(!last.result)return;const rom=store.get(last.result);rom.onsuccess=()=>{if(rom.result)result={key:last.result,rom:rom.result};};};
+    tx.oncomplete=()=>resolve(result);tx.onabort=()=>reject(tx.error||Error('Could not read the retained ROM.'));
+  });}
   put(store,key,value){return new Promise((resolve,reject)=>{const tx=this.db.transaction(store,'readwrite');tx.objectStore(store).put(value,key);tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error||Error('Storage transaction aborted'));});}
   lease(key,release=false,exclusiveLock=false){return new Promise((resolve,reject)=>{
     const tx=this.db.transaction('leases','readwrite'),s=tx.objectStore('leases'),r=s.get(key);let denied=false;
@@ -71,12 +75,11 @@ export class Store {
     throw Error(`The ${slot==='quick'?'Quick Save':'automatic recovery'} checkpoint is corrupt or incompatible. The stored record was preserved.`);
   }
   async stateOptions(romHash,coreRevision){
-    const options={};
-    for(const slot of ['auto','quick']){
-      try{const state=await this.loadState(romHash,slot,coreRevision);if(state)options[slot]={at:state.meta.at,recovered:state.recovered,length:state.meta.length};}
-      catch(error){options[slot]={error:error.message};}
-    }
-    return options;
+    const entries=await Promise.all(['auto','quick'].map(async slot=>{
+      try{const state=await this.loadState(romHash,slot,coreRevision);return [slot,state?{at:state.meta.at,recovered:state.recovered,length:state.meta.length}:undefined];}
+      catch(error){return [slot,{error:error.message}];}
+    }));
+    return Object.fromEntries(entries.filter(([,value])=>value!==undefined));
   }
 }
 export class SaveQueue {
