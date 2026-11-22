@@ -22,10 +22,35 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '4.0.10'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: melonDS-emu/melonDS
+          ref: b86390e4428bf38ce4c1ce0e9ca446d6d25955e8
+          path: work/research/melonds
+          persist-credentials: false
+
+      - name: Rebuild pinned WebAssembly core and refresh offline assets
+        env:
+          MELONDS_SOURCE: work/research/melonds
+        run: |
+          node browser-emulator/scripts/build-core.mjs
+          node browser-emulator/scripts/prepare.mjs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

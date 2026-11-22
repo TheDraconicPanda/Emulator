@@ -6,8 +6,9 @@
 <body><main>
 <header><div><span class="eyebrow">POKÉMON EMULATOR / FEASIBILITY LAB</span><h1>Browser B1 <small>0.1.1</small></h1></div><span id="run-state" class="pill">Starting</span></header>
 <p class="intro">Local DS emulation. Phone performance and battery acceptance pending.</p>
+<details class="panel settings"><summary>Settings</summary><label><input id="auto-load-rom" type="checkbox" checked> Auto load .nds</label><label><input id="auto-load-state" type="checkbox" checked> Auto load latest save</label><p class="hint">Automatically reopen the last retained ROM and restore the newest full-state checkpoint. Turn either option off to choose manually.</p></details>
 <nav class="toolbar" aria-label="Related tools">
-<a class="button" href="https://thedraconicpanda.github.io/pokemon-reader/" target="_blank" rel="noopener">Open Pokémon Reader ↗</a>
+<a id="reader-link" class="button" href="https://thedraconicpanda.github.io/pokemon-reader/" target="_blank" rel="noopener">Open Pokémon Reader ↗</a>
 </nav>
 <section class="toolbar" aria-label="Game setup">
 <label class="button">Choose .nds<input id="rom" type="file" accept=".nds" hidden></label>

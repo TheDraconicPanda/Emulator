@@ -3,7 +3,11 @@ import {detectSave} from './vendor/reader/js/saves/index.js';
 const $=id=>document.getElementById(id);
 const status=message=>$('status').textContent=message;
 const worker=new Worker(new URL('./worker.mjs',import.meta.url),{type:'module'});
-let gameCode=null,loaded=false,isDiagnostic=false,running=false,busy=false,pressed=new Map(),keyboard=new Set(),touch=[-1,-1],checkpointFailures=new Set();
+let gameCode=null,loaded=false,isDiagnostic=false,running=false,busy=false,pressed=new Map(),keyboard=new Set(),touch=[-1,-1],checkpointFailures=new Set(),readerHandoff=false,readerTab=null;
+const settings={autoLoadROM:localStorage.getItem('b1-auto-load-rom')!=='false',autoLoadState:localStorage.getItem('b1-auto-load-state')!=='false'};
+$('auto-load-rom').checked=settings.autoLoadROM;$('auto-load-state').checked=settings.autoLoadState;
+$('auto-load-rom').onchange=()=>{settings.autoLoadROM=$('auto-load-rom').checked;localStorage.setItem('b1-auto-load-rom',String(settings.autoLoadROM));};
+$('auto-load-state').onchange=()=>{settings.autoLoadState=$('auto-load-state').checked;localStorage.setItem('b1-auto-load-state',String(settings.autoLoadState));};
 let audio=null,audioNode=null,audioGain=null,audioMuted=false,audioHealth={},metrics={},saveHealth={},stateHealth={},presentations=0,presentationStart=0,presentationRate=0;
 const capabilities={secureContext:isSecureContext,wasm:typeof WebAssembly==='object',worker:typeof Worker==='function',
   audioWorklet:typeof AudioWorkletNode==='function',indexedDB:!!globalThis.indexedDB,serviceWorker:'serviceWorker'in navigator,
@@ -85,7 +89,7 @@ function mapTouch(event){const r=$('bottom').getBoundingClientRect();touch=[Math
 $('bottom').addEventListener('pointerdown',event=>{if(touchPointer!==null)return;event.preventDefault();touchPointer=event.pointerId;$('bottom').setPointerCapture(event.pointerId);mapTouch(event);});
 $('bottom').addEventListener('pointermove',event=>{if(touchPointer===event.pointerId)mapTouch(event);});
 for(const name of ['pointerup','pointercancel','lostpointercapture'])$('bottom').addEventListener(name,event=>{if(touchPointer!==event.pointerId)return;touchPointer=null;touch=[-1,-1];input();});
-addEventListener('blur',()=>{clearInput();if(running)pause();});
+addEventListener('blur',()=>{clearInput();if(running&&!readerHandoff)pause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
 async function action(fn){try{await fn();}catch(error){busy=false;status(error.message);controls();}}
 $('rom').onchange=()=>action(async()=>{const file=$('rom').files[0];if(!file)return;
@@ -96,6 +100,7 @@ $('rom').onchange=()=>action(async()=>{const file=$('rom').files[0];if(!file)ret
 for(const id of ['reopen','diagnostic'])$(id).onclick=()=>{pause();busy=true;controls();send(id);};
 $('resume').onclick=()=>action(async()=>{await startAudio();send('resume');});
 $('pause').onclick=pause;
+$('reader-link').addEventListener('click',event=>{event.preventDefault();readerHandoff=true;readerTab=window.open('about:blank','_blank');if(!readerTab){readerHandoff=false;status('Allow pop-ups to open Pokémon Reader after the game is safely paused.');return;}busy=true;controls();status('Pausing and saving the current emulator state before opening Reader…');send('pause-for-reader');});
 function updateAudioToggle(){const button=$('audio-toggle');button.classList.toggle('muted',audioMuted);button.setAttribute('aria-pressed',String(audioMuted));button.setAttribute('aria-label',audioMuted?'Unmute game audio':'Mute game audio');button.title=audioMuted?'Unmute game audio':'Mute game audio';}
 $('audio-toggle').onclick=()=>{audioMuted=!audioMuted;if(audioGain)audioGain.gain.setTargetAtTime(audioMuted?0:1,audio?.currentTime||0,.012);updateAudioToggle();};
 updateAudioToggle();
@@ -125,11 +130,18 @@ function renderMetrics(){const rows={
 }
 worker.onmessage=({data})=>{
   switch(data.type){
-    case 'ready':busy=false;controls();status('Choose your own cartridge, reopen a retained ROM, or run the original diagnostic.');$('run-state').textContent='Ready';break;
+    case 'ready':busy=false;controls();$('run-state').textContent='Ready';
+      if(settings.autoLoadROM&&data.hasRetainedROM){busy=true;controls();status('Reopening your last .nds…');send('reopen');}
+      else status('Choose your own cartridge, reopen a retained ROM, or run the original diagnostic.');
+      break;
     case 'loaded':loaded=true;busy=false;gameCode=data.gameCode;isDiagnostic=data.diagnostic;controls();
       status(data.diagnostic?'Original red/green diagnostic loaded. Tap Resume.':'Cartridge loaded locally. Tap Resume + audio.');
       $('save-status').textContent=data.recovered?'Recovered the previous checksum-valid cartridge save. Export a backup.':data.hasSave?'Stored cartridge save restored.':'No stored save yet. Save normally in-game.';
-      checkpointFailures.clear();$('state-status').textContent=data.checkpoints?.auto?.error||data.checkpoints?.quick?.error||'No full-state checkpoint yet.';showCheckpointChoices(data.checkpoints);controls();break;
+      checkpointFailures.clear();$('state-status').textContent=data.checkpoints?.auto?.error||data.checkpoints?.quick?.error||'No full-state checkpoint yet.';
+      const valid=['auto','quick'].filter(slot=>data.checkpoints?.[slot]?.at);
+      if(settings.autoLoadState&&valid.length){const latest=valid.sort((a,b)=>data.checkpoints[b].at-data.checkpoints[a].at)[0];busy=true;controls();status('Restoring the latest full-state checkpoint…');send('restore-state',{slot:latest});}
+      else showCheckpointChoices(data.checkpoints);
+      controls();break;
     case 'running':running=true;document.body.classList.add('playing');scrollTo(0,0);presentations=0;presentationRate=0;presentationStart=performance.now();$('run-state').textContent='Running';status('Normal speed · no fast-forward');controls();break;
     case 'paused':running=false;clearInput();document.body.classList.remove('playing');$('run-state').textContent='Paused';audioNode?.port.postMessage({reset:true});audio?.suspend().catch(()=>{});controls();break;
     case 'video':for(let s=0;s<2;s++){const src=data.data.subarray(s*256*192*4,(s+1)*256*192*4),dst=image[s].data;
@@ -157,8 +169,9 @@ worker.onmessage=({data})=>{
       let validation='Reader check unavailable for this game';
       if(['CPUE','IPGE'].includes(gameCode)){const parsed=detectSave(data.bytes);validation=parsed.valid?'Reader parser validated this exported snapshot':'Reader validation failed: the game may not have finished saving. Keep this raw recovery copy and retry after a completed in-game save.';}
       download(data.bytes,'reader-b1-cartridge.sav');status(validation+'. Export pauses emulation.');break;}
+    case 'reader-ready':if(readerTab&&!readerTab.closed)readerTab.location.href='https://thedraconicpanda.github.io/pokemon-reader/';readerTab=null;readerHandoff=false;busy=false;controls();status('Emulator paused and full-state checkpoint persisted. Pokémon Reader opened in a new tab.');break;
     case 'imported':busy=false;controls();status('Validated raw save imported and persisted. Cartridge restarted; tap Resume.');break;
-    case 'error':busy=false;status(data.message);controls();break;
+    case 'error':if(readerHandoff){if(readerTab&&!readerTab.closed)readerTab.close();readerTab=null;readerHandoff=false;}busy=false;status(data.message);controls();break;
   }
 };
 worker.onerror=()=>{busy=true;status('Core worker could not start. Check secure context, available memory and the WASM build; reload before continuing.');controls();};

@@ -200,3 +200,5 @@ body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.mut
 
 /* Landscape control reach: move the D-pad and face buttons inward and upward. */
 @media(orientation:landscape) and (min-width:600px){body.playing .dpad{transform:translate(32px,-20px)}body.playing .face{transform:translate(-32px,-20px)}}
+
+.settings label{display:flex;align-items:center;gap:9px;margin:12px 0;cursor:pointer}.settings input{width:18px;height:18px;accent-color:#d6df91}.settings .hint{margin-bottom:0}

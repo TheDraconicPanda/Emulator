@@ -1,5 +1,8 @@
 name: Browser B1 verification
 on:
+  pull_request:
+    branches: [main]
+    paths: ['browser-emulator/**', 'reader-dependency/**', 'docs/browser-b1.md', 'package.json', '.github/workflows/browser-b1.yml']
   push:
     branches: [main, 'migration/**']
     paths: ['browser-emulator/**', 'reader-dependency/**', 'docs/browser-b1.md', 'package.json', '.github/workflows/browser-b1.yml']
@@ -9,7 +12,7 @@ permissions:
 jobs:
   b1:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -17,7 +20,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify shipped WASM, parsers and offline assets in a real browser
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '4.0.10'
+      - uses: actions/checkout@v4
+        with:
+          repository: melonDS-emu/melonDS
+          ref: b86390e4428bf38ce4c1ce0e9ca446d6d25955e8
+          path: work/research/melonds
+          persist-credentials: false
+      - name: Rebuild pinned WebAssembly core and refresh offline assets
+        env:
+          MELONDS_SOURCE: work/research/melonds
+        run: |
+          node browser-emulator/scripts/build-core.mjs
+          node browser-emulator/scripts/prepare.mjs
+      - name: Verify rebuilt WASM, parsers and offline assets in Chromium
         env:
           CHROMIUM_PATH: google-chrome
         run: node --test browser-emulator/tests/*.test.mjs
@@ -29,4 +47,3 @@ jobs:
           name: Emulator-Browser-B1-public-assets
           path: work/b1-public
           if-no-files-found: error
-
