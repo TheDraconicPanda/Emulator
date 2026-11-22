@@ -24,6 +24,14 @@ static std::unique_ptr<melonDS::Savestate> captureState() {
     return state;
 }
 extern "C" {
+void b1_sync_rtc() {
+    if(!nds)return;
+    std::time_t now=std::time(nullptr);
+    auto local=std::localtime(&now);
+    if(!local)return;
+    nds->RTC.SetDateTime(local->tm_year+1900,local->tm_mon+1,local->tm_mday,
+        local->tm_hour,local->tm_min,local->tm_sec);
+}
 int b1_load(const uint8_t* rom,unsigned size,const uint8_t* save,unsigned length) {
     diagnostic=false;
     if(size<512||size>512*1024*1024||length>8*1024*1024||rom[0x12]!=0)return 0;
@@ -38,9 +46,7 @@ int b1_load(const uint8_t* rom,unsigned size,const uint8_t* save,unsigned length
     auto next=std::make_unique<melonDS::NDS>(std::move(args),&session);
     next->SetNDSCart(std::move(cart));next->Reset();next->SetupDirectBoot("reader-browser.nds");
     static_cast<melonDS::SoftRenderer&>(next->GetRenderer3D()).SetThreaded(false,next->GPU);
-    std::time_t now=std::time(nullptr);auto local=*std::localtime(&now);
-    next->RTC.SetDateTime(local.tm_year+1900,local.tm_mon+1,local.tm_mday,local.tm_hour,local.tm_min,local.tm_sec);
-    next->Start();nds=std::move(next);session={};return 1;
+    next->Start();nds=std::move(next);session={};b1_sync_rtc();return 1;
 }
 double b1_step(unsigned keys,int x,int y) {
     if(!nds||session.stopped||!nds->IsRunning())return 0;
