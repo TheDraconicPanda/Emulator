@@ -202,3 +202,20 @@ body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.mut
 @media(orientation:landscape) and (min-width:600px){body.playing .dpad{transform:translate(32px,-20px)}body.playing .face{transform:translate(-32px,-20px)}}
 
 .settings label{display:flex;align-items:center;gap:9px;margin:12px 0;cursor:pointer}.settings input{width:18px;height:18px;accent-color:#d6df91}.settings .hint{margin-bottom:0}
+
+
+/* Portrait touch targets: enlarge the D-pad and face buttons by ~1.3x.
+   Grid growth keeps the D-pad's top-left and face cluster's top-right anchored,
+   so the extra area extends right/down and left/down respectively. */
+@media(orientation:portrait){
+ body.playing .dpad,body.playing .face{grid-template:repeat(3,57.2px)/repeat(3,62.4px);gap:3px}
+ body.playing .dpad button,body.playing .face button{min-width:62.4px;min-height:57.2px}
+}
+@media(orientation:portrait) and (max-height:760px){
+ body.playing .dpad,body.playing .face{grid-template:repeat(3,49.4px)/repeat(3,54.6px)}
+ body.playing .dpad button,body.playing .face button{min-width:54.6px;min-height:49.4px}
+}
+@media(orientation:portrait) and (max-width:360px) and (max-height:760px){
+ body.playing .dpad,body.playing .face{grid-template:repeat(3,52px)/repeat(3,52px)}
+ body.playing .dpad button,body.playing .face button{min-width:52px;min-height:52px}
+}
