@@ -92,7 +92,10 @@ function tick(){
 async function openROM(rom,isDiagnostic=false,retained={}){
   pause();await copySave();if(saveQueue)await saveQueue.flush();
   for(const queue of Object.values(stateQueues))try{await queue.flush();}catch{}
-  if(key&&!diagnostic)await store.lease(key,true);clearInterval(leaseTimer);releaseLock?.();releaseLock=null;
+  // Stop renewing and release the browser-wide writer lock before awaiting
+  // IndexedDB. Reopening the same retained ROM must be able to reacquire it.
+  clearInterval(leaseTimer);releaseLock?.();releaseLock=null;
+  if(key&&!diagnostic)await store.lease(key,true);
   key=null;saveQueue=null;diagnostic=false;
   const next=isDiagnostic?'diagnostic':retained.key||await digest(rom);let saved=null;
   if(!isDiagnostic){const exclusive=await lockROM(next);await store.lease(next,false,exclusive);saved=await store.loadSave(next);}
