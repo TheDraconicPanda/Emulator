@@ -8,7 +8,7 @@ const settings={autoLoadROM:localStorage.getItem('b1-auto-load-rom')!=='false',a
 $('auto-load-rom').checked=settings.autoLoadROM;$('auto-load-state').checked=settings.autoLoadState;
 $('auto-load-rom').onchange=()=>{settings.autoLoadROM=$('auto-load-rom').checked;localStorage.setItem('b1-auto-load-rom',String(settings.autoLoadROM));};
 $('auto-load-state').onchange=()=>{settings.autoLoadState=$('auto-load-state').checked;localStorage.setItem('b1-auto-load-state',String(settings.autoLoadState));};
-let audio=null,audioNode=null,audioGain=null,audioMuted=false,audioHealth={},metrics={},saveHealth={},stateHealth={},presentations=0,presentationStart=0,presentationRate=0;
+let audio=null,audioNode=null,audioGain=null,audioMuted=true,audioHealth={},metrics={},saveHealth={},stateHealth={},presentations=0,presentationStart=0,presentationRate=0;
 const capabilities={secureContext:isSecureContext,wasm:typeof WebAssembly==='object',worker:typeof Worker==='function',
   audioWorklet:typeof AudioWorkletNode==='function',indexedDB:!!globalThis.indexedDB,serviceWorker:'serviceWorker'in navigator,
   persistentStorage:!!navigator.storage?.persist,standalone:matchMedia('(display-mode: standalone)').matches||!!navigator.standalone,
@@ -98,11 +98,11 @@ $('rom').onchange=()=>action(async()=>{const file=$('rom').files[0];if(!file)ret
   pause();busy=true;controls();status('Loading local cartridge and retaining an offline copy…');
   const rom=new Uint8Array(await file.arrayBuffer());send('load',{rom});$('rom').value='';});
 for(const id of ['reopen','diagnostic'])$(id).onclick=()=>{pause();busy=true;controls();send(id);};
-$('resume').onclick=()=>action(async()=>{await startAudio();send('resume');});
+$('resume').onclick=()=>action(async()=>{if(!audioMuted)await startAudio();send('resume');});
 $('pause').onclick=pause;
 $('reader-link').addEventListener('click',event=>{event.preventDefault();readerHandoff=true;readerTab=window.open('about:blank','_blank');if(!readerTab){readerHandoff=false;status('Allow pop-ups to open Pokémon Reader after the game is safely paused.');return;}busy=true;controls();status('Pausing and saving the current emulator state before opening Reader…');send('pause-for-reader');});
 function updateAudioToggle(){const button=$('audio-toggle');button.classList.toggle('muted',audioMuted);button.setAttribute('aria-pressed',String(audioMuted));button.setAttribute('aria-label',audioMuted?'Unmute game audio':'Mute game audio');button.title=audioMuted?'Unmute game audio':'Mute game audio';}
-$('audio-toggle').onclick=()=>{audioMuted=!audioMuted;if(audioGain)audioGain.gain.setTargetAtTime(audioMuted?0:1,audio?.currentTime||0,.012);updateAudioToggle();};
+$('audio-toggle').onclick=()=>{audioMuted=!audioMuted;if(audioGain)audioGain.gain.setTargetAtTime(audioMuted?0:1,audio?.currentTime||0,.012);updateAudioToggle();if(!audioMuted)action(async()=>{await startAudio();});};
 updateAudioToggle();
 $('quick-save').onclick=()=>{if($('quick-save').disabled)return;$('quick-save').disabled=true;$('state-status').textContent='Capturing Quick Save…';send('quick-save');};
 $('retry-state').onclick=()=>{const slot=checkpointFailures.values().next().value;if(slot)send('retry-state',{slot});};
@@ -135,7 +135,7 @@ worker.onmessage=({data})=>{
       else status('Choose your own cartridge, reopen a retained ROM, or run the original diagnostic.');
       break;
     case 'loaded':loaded=true;busy=false;gameCode=data.gameCode;isDiagnostic=data.diagnostic;controls();
-      status(data.diagnostic?'Original red/green diagnostic loaded. Tap Resume.':'Cartridge loaded locally. Tap Resume + audio.');
+      status(data.diagnostic?'Original red/green diagnostic loaded. Tap Resume.':'Cartridge loaded locally. Tap Resume.');
       $('save-status').textContent=data.recovered?'Recovered the previous checksum-valid cartridge save. Export a backup.':data.hasSave?'Stored cartridge save restored.':'No stored save yet. Save normally in-game.';
       checkpointFailures.clear();$('state-status').textContent=data.checkpoints?.auto?.error||data.checkpoints?.quick?.error||'No full-state checkpoint yet.';
       const valid=['auto','quick'].filter(slot=>data.checkpoints?.[slot]?.at);
@@ -163,7 +163,7 @@ worker.onmessage=({data})=>{
     case 'state-restored':
       busy=false;$('checkpoint-dialog').close();checkpointFailures.clear();
       $('state-status').textContent=`Restored ${data.slot==='quick'?'Quick Save':'automatic recovery'} from ${checkpointTime(data.at)}${data.recovered?' (previous valid copy)':''}.`;
-      status('Full emulator state restored. Tap Resume + audio to continue.');controls();break;
+      status('Full emulator state restored. Resuming muted…');controls();send('resume');break;
     case 'export':{
       if(!data.bytes.length){status('No cartridge save memory to export.');break;}
       let validation='Reader check unavailable for this game';
