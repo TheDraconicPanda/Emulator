@@ -100,7 +100,9 @@ test('real Chromium: WASM worker, phone controls, raw import/export, fenced dura
     await command('Network.enable');await command('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
     // Keep normal browser cache semantics so the controlled service worker can serve its CacheStorage snapshot.
     // The test server sends no-cache headers, so a successful offline reload still depends on the service worker.
-    await command('Page.reload');await until(()=>evaluate(`document.querySelector('#run-state')?.textContent==='Ready'`),'offline worker startup');
+    await command('Page.reload');
+    try{await until(()=>evaluate(`document.querySelector('#run-state')?.textContent==='Ready'`),'offline worker startup');}
+    catch(error){const diagnostic=await evaluate(`({url:location.href,readyState:document.readyState,title:document.title,runState:document.querySelector('#run-state')?.textContent,status:document.querySelector('#status')?.textContent,offline:document.querySelector('#offline')?.textContent,controller:!!navigator.serviceWorker?.controller,resources:performance.getEntriesByType('resource').slice(-20).map(x=>x.name)})`).catch(e=>({evaluationError:e.message}));throw Error(error.message+'; reload diagnostics: '+JSON.stringify(diagnostic));}
     await evaluate(`document.querySelector('#reopen').click()`);await until(()=>evaluate(`document.querySelector('#checkpoint-dialog').open`),'offline retained ROM and state choices');
     await evaluate(`document.querySelector('#restore-quick').click()`);await until(()=>evaluate(`document.querySelector('#state-status').textContent.includes('Restored Quick Save')`),'offline Quick Save restore');
     await evaluate(`document.querySelector('#reopen').click()`);await until(()=>evaluate(`document.querySelector('#checkpoint-dialog').open`),'reopen state chooser');
