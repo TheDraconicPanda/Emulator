@@ -4,8 +4,7 @@ import {Store,SaveQueue,StateQueue,digest,STATE_MAJOR,STATE_MINOR} from './stora
 import {Pacer,Metrics} from './timing.mjs';
 const send=(type,data={},transfer=[])=>postMessage({type,...data},transfer);
 const CORE_REVISION='b86390e4428bf38ce4c1ce0e9ca446d6d25955e8';
-const core=await factory({print:()=>{},printErr:()=>{}});
-const store=await Store.open();
+const [core,store]=await Promise.all([factory({print:()=>{},printErr:()=>{}}),Store.open()]);
 let key=null,diagnostic=false,running=false,keys=0,touch=[-1,-1],timer=null,leaseTimer=null;
 let lastRevision=0,dirtyAt=0,lastChange=0,videoOutstanding=false,saveQueue=null,stateQueues={},stateTimer=null,stateCaptureBusy=false;
 let metrics=new Metrics(),pacer=new Pacer(),lastReport=0;
@@ -90,12 +89,12 @@ function tick(){
     timer=setTimeout(tick,pacer.delay(performance.now()));
   }catch{pause();send('error',{message:'Emulation failed. Export your cartridge save if available; reload before continuing.'});}
 }
-async function openROM(rom,isDiagnostic=false){
+async function openROM(rom,isDiagnostic=false,retained={}){
   pause();await copySave();if(saveQueue)await saveQueue.flush();
   for(const queue of Object.values(stateQueues))try{await queue.flush();}catch{}
   if(key&&!diagnostic)await store.lease(key,true);clearInterval(leaseTimer);releaseLock?.();releaseLock=null;
   key=null;saveQueue=null;diagnostic=false;
-  const next=isDiagnostic?'diagnostic':await digest(rom);let saved=null;
+  const next=isDiagnostic?'diagnostic':retained.key||await digest(rom);let saved=null;
   if(!isDiagnostic){const exclusive=await lockROM(next);await store.lease(next,false,exclusive);saved=await store.loadSave(next);}
   const save=saved?.bytes||new Uint8Array();
   const ok=withBytes(save,(sp,sl)=>isDiagnostic?core._b1_diagnostic(sp,sl,0):withBytes(rom,(rp,rl)=>core._b1_load(rp,rl,sp,sl)));
@@ -103,7 +102,7 @@ async function openROM(rom,isDiagnostic=false){
   key=next;diagnostic=isDiagnostic;lastRevision=core._b1_revision();dirtyAt=0;tick.seen=lastRevision;
   saveQueue=isDiagnostic?null:new SaveQueue((data,rev)=>store.save(key,data,rev),status=>send('save',{
     ...status,state:status.state==='persisted'&&status.revision!==core._b1_revision()?'dirty':status.state}));
-  if(!isDiagnostic){await store.put('roms',key,{bytes:rom});await store.put('roms','last',key);
+  if(!isDiagnostic){if(!retained.retained){await store.put('roms',key,{bytes:rom});await store.put('roms','last',key);}
     stateQueues={auto:checkpointQueue('auto',key),quick:checkpointQueue('quick',key)};
     leaseTimer=setInterval(()=>store.lease(key).catch(fault),5000);}
   const checkpoints=isDiagnostic?{}:await store.stateOptions(key,CORE_REVISION);
@@ -118,7 +117,7 @@ onmessage=({data})=>{
     switch(data.type){
       case 'load': await openROM(data.rom);break;
       case 'diagnostic': await openROM(null,true);break;
-      case 'reopen':{const last=await store.get('roms','last'),r=last&&await store.get('roms',last);if(!r)throw Error('No retained ROM. Choose a .nds file first.');await openROM(r.bytes);break;}
+      case 'reopen':{const retained=await store.getLastROM();if(!retained)throw Error('No retained ROM. Choose a .nds file first.');await openROM(retained.rom.bytes,false,{key:retained.key,retained:true});break;}
       case 'resume':if(running)break;if(!key)throw Error('Choose a ROM or run the diagnostic first.');if(saveQueue?.error)throw Error('Retry cartridge-save persistence or export before resuming.');
         if(!diagnostic){await store.lease(key);core._b1_sync_rtc();}metrics.reset(performance.now());pacer.reset(performance.now());running=true;tick();startAutoCheckpoints();send('running');break;
       case 'pause':pause();try{await copySave();}catch{}if(key&&!diagnostic)try{await saveCheckpoint('auto');}catch(error){checkpointInfo('auto',{state:'failed',at:Date.now(),message:error.message});}break;
