@@ -94,7 +94,7 @@ body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.mut
  body.playing .shoulders #quick-save{grid-column:3}
  body.playing .shoulders #audio-toggle{grid-column:4}
  body.playing .shoulders [data-key="8"]{grid-column:5;justify-self:end}
- body.playing .hands{margin-top:14px}
+ body.playing .hands{margin-top:14px;transform:translateY(12px)}
  body.playing .system{margin-top:12px;gap:14px}
 }
 @media(orientation:landscape){
