@@ -219,3 +219,10 @@ body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.mut
  body.playing .dpad,body.playing .face{grid-template:repeat(3,52px)/repeat(3,52px)}
  body.playing .dpad button,body.playing .face button{min-width:52px;min-height:52px}
 }
+
+
+/* Temporary iOS viewport diagnostics: outlines do not affect layout dimensions. */
+body.playing .screens figure:nth-of-type(1){outline:2px solid #ff3b30;outline-offset:1px}
+body.playing .screens figure:nth-of-type(2){outline:2px solid #168aff;outline-offset:1px}
+body.playing .controls{outline:2px solid #39e75f;outline-offset:2px}
+body.playing .shoulders{outline:2px solid #ffe600;outline-offset:1px}
