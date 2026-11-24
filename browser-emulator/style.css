@@ -230,3 +230,13 @@ body.playing .shoulders{outline:2px solid #ffe600;outline-offset:1px}
 /* Temporary viewport measurements: accessible after pausing, without changing gameplay layout. */
 .viewport-report{margin:10px 0}
 .viewport-report pre{max-height:55vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.45 ui-monospace,monospace;color:#d6df91;background:#07110e;padding:10px;border-radius:8px}
+
+/* iOS standalone PWA reports a zero top safe-area inset. The captured geometry
+   showed the upper screen 25.3px above the visual viewport. Compensate without
+   resizing either DS screen; move the touch controls down by the same amount. */
+@media (display-mode:standalone) and (orientation:portrait){
+  body.playing{--ios-standalone-top-fallback:26px}
+  body.playing .screens{transform:translateY(var(--ios-standalone-top-fallback))}
+  body.playing .hands{transform:translateY(calc(12px + var(--ios-standalone-top-fallback)))}
+  body.playing .system{transform:translateY(var(--ios-standalone-top-fallback))}
+}
