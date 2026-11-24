@@ -221,15 +221,7 @@ body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.mut
 }
 
 
-/* Temporary iOS viewport diagnostics: outlines do not affect layout dimensions. */
-body.playing .screens figure:nth-of-type(1){outline:2px solid #ff3b30;outline-offset:1px}
-body.playing .screens figure:nth-of-type(2){outline:2px solid #168aff;outline-offset:1px}
-body.playing .controls{outline:2px solid #39e75f;outline-offset:2px}
-body.playing .shoulders{outline:2px solid #ffe600;outline-offset:1px}
 
-/* Temporary viewport measurements: accessible after pausing, without changing gameplay layout. */
-.viewport-report{margin:10px 0}
-.viewport-report pre{max-height:55vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.45 ui-monospace,monospace;color:#d6df91;background:#07110e;padding:10px;border-radius:8px}
 
 /* iOS standalone PWA reports a zero top safe-area inset. The captured geometry
    showed the upper screen 25.3px above the visual viewport. Compensate without
@@ -253,4 +245,12 @@ body.playing .shoulders{outline:2px solid #ffe600;outline-offset:1px}
   body.playing .controls{padding-bottom:0}
   body.playing .hands{margin-top:0}
   body.playing .system{margin-top:0}
+}
+
+
+/* Final portrait fit: keep the touch targets inside the green controls boundary.
+   Start/Select are centered and can use the otherwise open space between clusters. */
+@media(orientation:portrait){
+  body.playing .hands{transform:translateY(30px)}
+  body.playing .system{transform:translateY(-2px)}
 }
