@@ -17,10 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-preview:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}preview/
+  build-preview:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -75,6 +72,13 @@ jobs:
         with:
           path: site
 
+  deploy-preview:
+    needs: build-preview
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}preview/
+    runs-on: ubuntu-24.04
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
