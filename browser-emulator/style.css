@@ -240,3 +240,17 @@ body.playing .shoulders{outline:2px solid #ffe600;outline-offset:1px}
   body.playing .hands{transform:translateY(calc(12px + var(--ios-standalone-top-fallback)))}
   body.playing .system{transform:translateY(var(--ios-standalone-top-fallback))}
 }
+
+
+/* Portrait spacing correction: reserve the full physical height of both DS screens
+   before the controls. The bottom safe area is already applied by .console, so
+   do not apply it a second time inside .controls. */
+@media(orientation:portrait){
+  body.playing .screens{
+    justify-content:flex-start;
+    transform:translateY(-7px);
+  }
+  body.playing .controls{padding-bottom:0}
+  body.playing .hands{margin-top:0}
+  body.playing .system{margin-top:0}
+}
