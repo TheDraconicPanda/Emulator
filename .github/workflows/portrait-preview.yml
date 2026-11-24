@@ -1,0 +1,80 @@
+name: Deploy portrait layout preview
+
+on:
+  push:
+    branches: [preview/portrait-layout-test]
+    paths:
+      - "browser-emulator/style.css"
+      - ".github/workflows/portrait-preview.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}preview/
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out preview branch
+        uses: actions/checkout@v4
+        with:
+          path: preview-source
+          persist-credentials: false
+
+      - name: Check out production main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-source
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '4.0.10'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: melonDS-emu/melonDS
+          ref: b86390e4428bf38ce4c1ce0e9ca446d6d25955e8
+          path: work/research/melonds
+          persist-credentials: false
+
+      - name: Build production assets
+        working-directory: main-source
+        env:
+          MELONDS_SOURCE: ../work/research/melonds
+        run: |
+          node browser-emulator/scripts/build-core.mjs
+          node browser-emulator/scripts/prepare.mjs
+
+      - name: Assemble production site and isolated CSS preview
+        run: |
+          mkdir -p site site/preview
+          cp -a main-source/browser-emulator/. site/
+          cp -a main-source/browser-emulator/. site/preview/
+          cp preview-source/browser-emulator/style.css site/preview/style.css
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload production plus preview
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
