@@ -64,9 +64,15 @@ function buttonAtPoint(x,y){
       :(ny<0?6:7);
     return dpad.querySelector(`[data-key="${key}"]`);
   }
-  const target=document.elementFromPoint(x,y);
-  const button=target?.closest?.('.controls [data-key]');
-  return button&&controlSurface.contains(button)?button:null;
+  // Utility controls are visually overlaid above the hand controls. On touch
+  // devices they can become the topmost element even when the user is aiming at
+  // the game button underneath. Search the full hit-test stack for a game key
+  // instead of treating a non-gameplay overlay as empty space.
+  for(const target of document.elementsFromPoint(x,y)){
+    const button=target?.closest?.('.controls [data-key]');
+    if(button&&controlSurface.contains(button))return button;
+  }
+  return null;
 }
 function refreshPressedButtons(){
   document.querySelectorAll('.controls [data-key]').forEach(button=>button.classList.toggle('pressed',
