@@ -143,7 +143,7 @@ worker.onmessage=({data})=>{
       if(settings.autoLoadState&&valid.length){const latest=valid.sort((a,b)=>data.checkpoints[b].at-data.checkpoints[a].at)[0];busy=true;controls();status('Restoring the latest full-state checkpoint…');send('restore-state',{slot:latest});}
       else showCheckpointChoices(data.checkpoints);
       controls();break;
-    case 'running':running=true;document.body.classList.add('playing');scrollTo(0,0);requestAnimationFrame(captureViewport);presentations=0;presentationRate=0;presentationStart=performance.now();$('run-state').textContent='Running';status('Normal speed · no fast-forward');controls();break;
+    case 'running':running=true;document.body.classList.add('playing');scrollTo(0,0);presentations=0;presentationRate=0;presentationStart=performance.now();$('run-state').textContent='Running';status('Normal speed · no fast-forward');controls();break;
     case 'paused':running=false;clearInput();document.body.classList.remove('playing');$('run-state').textContent='Paused';audioNode?.port.postMessage({reset:true});audio?.suspend().catch(()=>{});controls();break;
     case 'video':for(let s=0;s<2;s++){const src=data.data.subarray(s*256*192*4,(s+1)*256*192*4),dst=image[s].data;
       for(let p=0;p<src.length;p+=4){dst[p]=src[p+2];dst[p+1]=src[p+1];dst[p+2]=src[p];dst[p+3]=255;}contexts[s].putImageData(image[s],0,0);}
