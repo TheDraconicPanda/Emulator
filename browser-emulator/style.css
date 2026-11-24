@@ -259,6 +259,6 @@ body.playing .shoulders{outline:2px solid #ffe600;outline-offset:1px}
 /* Final portrait fit: keep the touch targets inside the green controls boundary.
    Start/Select are centered and can use the otherwise open space between clusters. */
 @media(orientation:portrait){
-  body.playing .hands{transform:translateY(6px)}
-  body.playing .system{transform:translateY(-26px)}
+  body.playing .hands{transform:translateY(30px)}
+  body.playing .system{transform:translateY(-2px)}
 }
