@@ -51,6 +51,19 @@ const keyMap={KeyZ:0,KeyX:1,ShiftLeft:2,ShiftRight:2,Enter:3,ArrowRight:4,ArrowL
 const controlSurface=document.querySelector('.controls');
 const activePointers=new Map();
 function buttonAtPoint(x,y){
+  const dpad=document.querySelector('.dpad');
+  const rect=dpad?.getBoundingClientRect();
+  if(rect&&x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom){
+    // Split the D-pad's full bounding square into four triangular touch zones.
+    // Each triangle points toward the centre, bringing the directional hit areas
+    // together without changing the visible button spacing.
+    const nx=((x-rect.left)/rect.width)*2-1;
+    const ny=((y-rect.top)/rect.height)*2-1;
+    const key=Math.abs(nx)>Math.abs(ny)
+      ?(nx<0?5:4)
+      :(ny<0?6:7);
+    return dpad.querySelector(`[data-key="${key}"]`);
+  }
   const target=document.elementFromPoint(x,y);
   const button=target?.closest?.('.controls [data-key]');
   return button&&controlSurface.contains(button)?button:null;
