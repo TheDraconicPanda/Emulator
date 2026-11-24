@@ -23,31 +23,6 @@ function controls(){for(const id of ['rom','reopen','diagnostic'])$(id).disabled
   $('resume').disabled||=running;$('pause').disabled||=!running;
 }
 
-function viewportRect(selector){
-  const el=document.querySelector(selector);if(!el)return null;
-  const r=el.getBoundingClientRect();
-  return {x:+r.x.toFixed(1),y:+r.y.toFixed(1),top:+r.top.toFixed(1),right:+r.right.toFixed(1),bottom:+r.bottom.toFixed(1),left:+r.left.toFixed(1),width:+r.width.toFixed(1),height:+r.height.toFixed(1)};
-}
-let lastViewportReport=null;
-function captureViewport(){
-  const probe=document.createElement('div');
-  probe.style.cssText='position:fixed;visibility:hidden;pointer-events:none;inset:0;padding-top:env(safe-area-inset-top);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);height:100dvh;width:100dvw';
-  document.body.appendChild(probe);
-  const p=getComputedStyle(probe),vv=window.visualViewport;
-  const report={
-    capturedAt:new Date().toISOString(),
-    viewport:{innerWidth,innerHeight,clientWidth:document.documentElement.clientWidth,clientHeight:document.documentElement.clientHeight,outerWidth,outerHeight,devicePixelRatio},
-    visualViewport:vv?{width:+vv.width.toFixed(1),height:+vv.height.toFixed(1),offsetTop:+vv.offsetTop.toFixed(1),offsetLeft:+vv.offsetLeft.toFixed(1),pageTop:+vv.pageTop.toFixed(1),pageLeft:+vv.pageLeft.toFixed(1),scale:vv.scale}:null,
-    screen:{width:screen.width,height:screen.height,availWidth:screen.availWidth,availHeight:screen.availHeight,orientation:screen.orientation?.type||null},
-    css:{dvh:+p.height.replace('px',''),dvw:+p.width.replace('px',''),safeArea:{top:p.paddingTop,right:p.paddingRight,bottom:p.paddingBottom,left:p.paddingLeft}},
-    elements:{console:viewportRect('.console'),screens:viewportRect('.screens'),upperScreen:viewportRect('.screens figure:nth-of-type(1)'),lowerScreen:viewportRect('.screens figure:nth-of-type(2)'),controls:viewportRect('.controls'),shoulders:viewportRect('.shoulders'),hands:viewportRect('.hands'),system:viewportRect('.system')}
-  };
-  probe.remove();lastViewportReport=report;
-  $('viewport-report-output').textContent=JSON.stringify(report,null,2);
-}
-$('viewport-report-button').onclick=()=>{$('viewport-report-panel').open=true;if(!lastViewportReport)captureViewport();};
-window.addEventListener('resize',()=>{if(running)captureViewport();});
-window.visualViewport?.addEventListener('resize',()=>{if(running)captureViewport();});
 function checkpointTime(at){return new Date(at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});}
 function showCheckpointChoices(options={}){
   const valid=['auto','quick'].filter(slot=>options[slot]?.at);
