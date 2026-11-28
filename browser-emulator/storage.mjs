@@ -3,6 +3,9 @@
 export const STATE_SCHEMA=1;
 export const STATE_MAJOR=13;
 export const STATE_MINOR=0;
+export const USER_STATE_SLOTS=['slot1','slot2','slot3','slot4'];
+const STATE_SLOTS=['auto','quick',...USER_STATE_SLOTS];
+function stateLabel(slot){return slot==='auto'?'automatic recovery':slot==='quick'?'Quick Save':`Save State ${USER_STATE_SLOTS.indexOf(slot)+1}`;}
 export async function digest(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');}
 function validStateBytes(bytes,meta,romHash,slot,coreRevision){
   if(!(bytes instanceof Uint8Array)||bytes.length<16||bytes.length>64*1024*1024)return false;
@@ -49,7 +52,7 @@ export class Store {
     throw Error('Stored save checksums failed. Import an exported backup; existing records were preserved.');
   }
   async saveState(romHash,slot,bytes,metadata){
-    if(!['auto','quick'].includes(slot))throw Error('Unknown emulator checkpoint slot.');
+    if(!STATE_SLOTS.includes(slot))throw Error('Unknown emulator checkpoint slot.');
     const data=new Uint8Array(bytes),at=Date.now();
     const meta={...metadata,schema:STATE_SCHEMA,romHash,slot,length:data.length,at};
     if(!validStateBytes(data,meta,romHash,slot,meta.coreRevision))throw Error('Core produced an invalid or incompatible full-state checkpoint.');
@@ -66,20 +69,30 @@ export class Store {
     });
   }
   async loadState(romHash,slot,coreRevision){
-    if(!['auto','quick'].includes(slot))throw Error('Unknown emulator checkpoint slot.');
+    if(!STATE_SLOTS.includes(slot))throw Error('Unknown emulator checkpoint slot.');
     const record=await this.get('states',`${romHash}:${slot}`);if(!record)return null;
     for(const name of ['current','previous']){
       const state=record[name];if(!state||!validStateBytes(state.bytes,state.meta,romHash,slot,coreRevision))continue;
       if(state.hash===await digest(state.bytes))return {...state,recovered:name==='previous'};
     }
-    throw Error(`The ${slot==='quick'?'Quick Save':'automatic recovery'} checkpoint is corrupt or incompatible. The stored record was preserved.`);
+    throw Error(`The ${stateLabel(slot)} checkpoint is corrupt or incompatible. The stored record was preserved.`);
   }
   async stateOptions(romHash,coreRevision){
-    const entries=await Promise.all(['auto','quick'].map(async slot=>{
+    const entries=await Promise.all(STATE_SLOTS.map(async slot=>{
       try{const state=await this.loadState(romHash,slot,coreRevision);return [slot,state?{at:state.meta.at,recovered:state.recovered,length:state.meta.length}:undefined];}
       catch(error){return [slot,{error:error.message}];}
     }));
     return Object.fromEntries(entries.filter(([,value])=>value!==undefined));
+  }
+  async deleteState(romHash,slot){
+    if(!USER_STATE_SLOTS.includes(slot))throw Error('Only user-managed save states can be deleted.');
+    return new Promise((resolve,reject)=>{const tx=this.db.transaction(['states','leases'],'readwrite');let denied=false;
+      const lease=tx.objectStore('leases').get(romHash);
+      lease.onsuccess=()=>{if(lease.result?.owner!==this.owner||lease.result.until<Date.now()){denied=true;tx.abort();return;}
+        tx.objectStore('states').delete(`${romHash}:${slot}`);
+      };
+      tx.oncomplete=resolve;tx.onabort=()=>reject(denied?Error('Checkpoint writer lost its ROM storage lease.'):tx.error||Error('Save-state deletion failed'));
+    });
   }
 }
 export class SaveQueue {

@@ -3,7 +3,7 @@ import {detectSave} from './vendor/reader/js/saves/index.js';
 const $=id=>document.getElementById(id);
 const status=message=>$('status').textContent=message;
 const worker=new Worker(new URL('./worker.mjs',import.meta.url),{type:'module'});
-let gameCode=null,loaded=false,isDiagnostic=false,running=false,busy=false,pressed=new Map(),keyboard=new Set(),touch=[-1,-1],checkpointFailures=new Set(),readerHandoff=false,readerTab=null;
+let gameCode=null,loaded=false,isDiagnostic=false,running=false,busy=false,pressed=new Map(),keyboard=new Set(),touch=[-1,-1],checkpointFailures=new Set(),readerHandoff=false,readerTab=null,pauseMenuRequested=false,stateOptions={};
 const settings={autoLoadROM:localStorage.getItem('b1-auto-load-rom')!=='false',autoLoadState:localStorage.getItem('b1-auto-load-state')!=='false'};
 $('auto-load-rom').checked=settings.autoLoadROM;$('auto-load-state').checked=settings.autoLoadState;
 $('auto-load-rom').onchange=()=>{settings.autoLoadROM=$('auto-load-rom').checked;localStorage.setItem('b1-auto-load-rom',String(settings.autoLoadROM));};
@@ -45,6 +45,28 @@ async function startAudio(){
   audioNode.port.postMessage({reset:true});await audio.resume();
 }
 function pause(){send('pause');clearInput();audioNode?.port.postMessage({reset:true});audio?.suspend().catch(()=>{});}
+function resumeGame(){ $('pause-menu').close();$('save-states-dialog').close();action(async()=>{if(!audioMuted)await startAudio();send('resume');});}
+function openPauseMenu(){if(!running)return;pauseMenuRequested=true;pause();}
+function renderStateSlots(options=stateOptions){
+  stateOptions=options;const host=$('state-slots');host.replaceChildren();
+  for(let i=1;i<=4;i++){
+    const slot=`slot${i}`,info=options[slot],row=document.createElement('article');row.className='state-slot';
+    const heading=document.createElement('h3');heading.textContent=`Save State ${i}`;
+    const detail=document.createElement('p');detail.textContent=info?.at?`Saved ${checkpointTime(info.at)}${info.recovered?' · recovered previous copy':''} · ${(info.length/1048576).toFixed(1)} MiB`:info?.error?`Unavailable: ${info.error}`:'Empty';
+    const actions=document.createElement('div');actions.className='toolbar';
+    const save=document.createElement('button');save.textContent=info?.at?'Overwrite':info?.error?'Replace invalid':'Save here';save.disabled=busy;
+    save.onclick=()=>{if((info?.at||info?.error)&&!confirm(`${info?.at?'Overwrite':'Replace'} Save State ${i}? This cannot be undone.`))return;busy=true;controls();detail.textContent='Capturing and saving…';send('save-state',{slot});};
+    const load=document.createElement('button');load.textContent='Load';load.disabled=busy||!info?.at||!!info?.error;
+    load.onclick=()=>{if(!confirm(`Load Save State ${i}? Your current session will first be saved to Automatic Recovery.`))return;busy=true;controls();send('restore-state',{slot});};
+    const remove=document.createElement('button');remove.textContent='Delete';remove.disabled=busy||(!info?.at&&!info?.error);
+    remove.onclick=()=>{if(!confirm(`Delete Save State ${i}?`))return;busy=true;controls();send('delete-state',{slot});};
+    actions.append(save,load,remove);row.append(heading,detail,actions);host.append(row);
+  }
+  const empty=Array.from({length:4},(_,i)=>options[`slot${i+1}`]?.at?null:`slot${i+1}`).find(Boolean);
+  $('save-next-state').disabled=busy||!empty;
+  $('save-next-state').textContent=empty?`Save to next empty slot (${Number(empty.slice(-1))})`:'All four slots are full — choose one to overwrite';
+}
+function openSaveStates(){$('pause-menu').close();$('save-states-dialog').showModal();renderStateSlots();send('get-state-options');}
 function clearInput(){pressed.clear();keyboard.clear();touch=[-1,-1];document.querySelectorAll('.pressed').forEach(e=>e.classList.remove('pressed'));input();}
 function input(){let keys=0;for(const k of [...pressed.values(),...keyboard])keys|=1<<k;send('input',{keys,touch});}
 const keyMap={KeyZ:0,KeyX:1,ShiftLeft:2,ShiftRight:2,Enter:3,ArrowRight:4,ArrowLeft:5,ArrowUp:6,ArrowDown:7,KeyW:8,KeyQ:9,KeyS:10,KeyA:11};
@@ -119,7 +141,12 @@ $('rom').onchange=()=>action(async()=>{const file=$('rom').files[0];if(!file)ret
   const rom=new Uint8Array(await file.arrayBuffer());send('load',{rom});$('rom').value='';});
 for(const id of ['reopen','diagnostic'])$(id).onclick=()=>{pause();busy=true;controls();send(id);};
 $('resume').onclick=()=>action(async()=>{if(!audioMuted)await startAudio();send('resume');});
-$('pause').onclick=pause;
+$('pause').onclick=openPauseMenu;
+$('pause-resume').onclick=resumeGame;
+$('pause-save-states').onclick=openSaveStates;
+$('states-back').onclick=()=>{$('save-states-dialog').close();$('pause-menu').showModal();};
+$('states-close').onclick=()=>$('save-states-dialog').close();
+$('save-next-state').onclick=()=>{const slot=['slot1','slot2','slot3','slot4'].find(name=>!stateOptions[name]?.at);if(!slot)return;busy=true;controls();send('save-state',{slot});};
 $('reader-link').addEventListener('click',event=>{event.preventDefault();readerHandoff=true;readerTab=window.open('about:blank','_blank');if(!readerTab){readerHandoff=false;status('Allow pop-ups to open Pokémon Reader after the game is safely paused.');return;}busy=true;controls();status('Pausing and saving the current emulator state before opening Reader…');send('pause-for-reader');});
 function updateAudioToggle(){const button=$('audio-toggle');button.classList.toggle('muted',audioMuted);button.setAttribute('aria-pressed',String(audioMuted));button.setAttribute('aria-label',audioMuted?'Unmute game audio':'Mute game audio');button.title=audioMuted?'Unmute game audio':'Mute game audio';}
 $('audio-toggle').onclick=()=>{audioMuted=!audioMuted;if(audioGain)audioGain.gain.setTargetAtTime(audioMuted?0:1,audio?.currentTime||0,.012);updateAudioToggle();if(!audioMuted)action(async()=>{await startAudio();});};
@@ -157,13 +184,13 @@ worker.onmessage=({data})=>{
     case 'loaded':loaded=true;busy=false;gameCode=data.gameCode;isDiagnostic=data.diagnostic;controls();
       status(data.diagnostic?'Original red/green diagnostic loaded. Tap Resume.':'Cartridge loaded locally. Tap Resume.');
       $('save-status').textContent=data.recovered?'Recovered the previous checksum-valid cartridge save. Export a backup.':data.hasSave?'Stored cartridge save restored.':'No stored save yet. Save normally in-game.';
-      checkpointFailures.clear();$('state-status').textContent=data.checkpoints?.auto?.error||data.checkpoints?.quick?.error||'No full-state checkpoint yet.';
+      checkpointFailures.clear();stateOptions=data.checkpoints||{};$('state-status').textContent=data.checkpoints?.auto?.error||data.checkpoints?.quick?.error||'No full-state checkpoint yet.';
       const valid=['auto','quick'].filter(slot=>data.checkpoints?.[slot]?.at);
       if(settings.autoLoadState&&valid.length){const latest=valid.sort((a,b)=>data.checkpoints[b].at-data.checkpoints[a].at)[0];busy=true;controls();status('Restoring the latest full-state checkpoint…');send('restore-state',{slot:latest});}
       else showCheckpointChoices(data.checkpoints);
       controls();break;
     case 'running':running=true;document.body.classList.add('playing');scrollTo(0,0);presentations=0;presentationRate=0;presentationStart=performance.now();$('run-state').textContent='Running';status('Normal speed · no fast-forward');controls();break;
-    case 'paused':running=false;clearInput();document.body.classList.remove('playing');$('run-state').textContent='Paused';audioNode?.port.postMessage({reset:true});audio?.suspend().catch(()=>{});controls();break;
+    case 'paused':running=false;clearInput();document.body.classList.remove('playing');$('run-state').textContent='Paused';audioNode?.port.postMessage({reset:true});audio?.suspend().catch(()=>{});controls();if(pauseMenuRequested){pauseMenuRequested=false;$('pause-menu').showModal();}break;
     case 'video':for(let s=0;s<2;s++){const src=data.data.subarray(s*256*192*4,(s+1)*256*192*4),dst=image[s].data;
       for(let p=0;p<src.length;p+=4){dst[p]=src[p+2];dst[p+1]=src[p+1];dst[p+2]=src[p];dst[p+3]=255;}contexts[s].putImageData(image[s],0,0);}
       presentations++;presentationRate=presentations/Math.max(.001,(performance.now()-presentationStart)/1000);send('presented');break;
@@ -173,16 +200,20 @@ worker.onmessage=({data})=>{
       $('save-status').textContent=data.state==='persisted'?`Persisted browser snapshot at ${new Date(data.at).toLocaleTimeString()} (${data.ms.toFixed(1)} ms). Finish the in-game save, then export a backup.`:
         data.state==='failed'?'Persistence failed. RAM retained. Export now, free storage, then retry.':data.state==='dirty'?'Cartridge changed — persistence pending…':'Writing browser snapshot…';renderMetrics();break;
     case 'checkpoint':
+      const checkpointLabel=data.slot==='quick'?'Quick Save':data.slot==='auto'?'Automatic recovery':`Save State ${Number(String(data.slot).replace('slot',''))}`;
       if(data.state==='persisted'){
-        checkpointFailures.delete(data.slot);stateHealth={...data,failures:stateHealth.failures||0};$('state-status').textContent=`${data.slot==='quick'?'Quick Save':'Automatic recovery'} saved locally at ${checkpointTime(data.at)} · ${(data.length/1048576).toFixed(1)} MiB · ${(data.captureMs||0).toFixed(0)} ms capture / ${(data.ms||0).toFixed(0)} ms storage.`;
+        checkpointFailures.delete(data.slot);stateHealth={...data,failures:stateHealth.failures||0};$('state-status').textContent=`${checkpointLabel} saved locally at ${checkpointTime(data.at)} · ${(data.length/1048576).toFixed(1)} MiB · ${(data.captureMs||0).toFixed(0)} ms capture / ${(data.ms||0).toFixed(0)} ms storage.`;
         $('quick-save').classList.toggle('saved',data.slot==='quick');setTimeout(()=>$('quick-save').classList.remove('saved'),1800);
       }else if(data.state==='failed'){
-        checkpointFailures.add(data.slot);stateHealth={...stateHealth,failures:(stateHealth.failures||0)+1};$('state-status').textContent=`${data.slot==='quick'?'Quick Save':'Automatic recovery'} failed: ${data.message||'browser storage unavailable'}.`;
-      }else $('state-status').textContent=data.slot==='quick'?'Writing Quick Save…':'Writing automatic recovery checkpoint…';
+        checkpointFailures.add(data.slot);stateHealth={...stateHealth,failures:(stateHealth.failures||0)+1};$('state-status').textContent=`${checkpointLabel} failed: ${data.message||'browser storage unavailable'}.`;
+      }else $('state-status').textContent=`Writing ${checkpointLabel}…`;
       controls();break;
+    case 'state-options':stateOptions=data.options||{};renderStateSlots(stateOptions);busy=false;controls();break;
     case 'state-restored':
-      busy=false;$('checkpoint-dialog').close();checkpointFailures.clear();
-      $('state-status').textContent=`Restored ${data.slot==='quick'?'Quick Save':'automatic recovery'} from ${checkpointTime(data.at)}${data.recovered?' (previous valid copy)':''}.`;
+      busy=false;$('checkpoint-dialog').close();$('pause-menu').close();$('save-states-dialog').close();checkpointFailures.clear();
+      const restoredLabel=data.slot==='quick'?'Quick Save':data.slot==='auto'?'Automatic recovery':`Save State ${Number(String(data.slot).replace('slot',''))}`;
+      $('state-status').dataset.restoredSlot=data.slot;
+      $('state-status').textContent=`Restored ${restoredLabel} from ${checkpointTime(data.at)}${data.recovered?' (previous valid copy)':''}.`;
       status('Full emulator state restored. Resuming muted…');controls();send('resume');break;
     case 'export':{
       if(!data.bytes.length){status('No cartridge save memory to export.');break;}
