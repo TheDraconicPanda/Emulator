@@ -211,7 +211,8 @@ worker.onmessage=({data})=>{
     case 'state-options':stateOptions=data.options||{};renderStateSlots(stateOptions);busy=false;controls();break;
     case 'state-restored':
       busy=false;$('checkpoint-dialog').close();$('pause-menu').close();$('save-states-dialog').close();checkpointFailures.clear();
-      $('state-status').textContent=`Restored ${data.slot==='quick'?'Quick Save':'automatic recovery'} from ${checkpointTime(data.at)}${data.recovered?' (previous valid copy)':''}.`;
+      const restoredLabel=data.slot==='quick'?'Quick Save':data.slot==='auto'?'Automatic recovery':`Save State ${Number(String(data.slot).replace('slot',''))}`;
+      $('state-status').textContent=`Restored ${restoredLabel} from ${checkpointTime(data.at)}${data.recovered?' (previous valid copy)':''}.`;
       status('Full emulator state restored. Resuming muted…');controls();send('resume');break;
     case 'export':{
       if(!data.bytes.length){status('No cartridge save memory to export.');break;}
