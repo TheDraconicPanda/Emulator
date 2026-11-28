@@ -7,6 +7,7 @@ const CORE_REVISION='b86390e4428bf38ce4c1ce0e9ca446d6d25955e8';
 const [core,store]=await Promise.all([factory({print:()=>{},printErr:()=>{}}),Store.open()]);
 let key=null,diagnostic=false,running=false,keys=0,touch=[-1,-1],timer=null,leaseTimer=null;
 let lastRevision=0,dirtyAt=0,lastChange=0,videoOutstanding=false,saveQueue=null,stateQueues={},stateTimer=null,stateCaptureBusy=false;
+const USER_STATE_SLOTS=['slot1','slot2','slot3','slot4'];
 let metrics=new Metrics(),pacer=new Pacer(),lastReport=0;
 let releaseLock=null;
 async function lockROM(key){
@@ -50,6 +51,7 @@ async function saveCheckpoint(slot){
 async function restoreCheckpoint(slot){
   if(!key||diagnostic)throw Error('Load the matching ROM before restoring a checkpoint.');
   pause();
+  if(USER_STATE_SLOTS.includes(slot))await saveCheckpoint('auto');
   const record=await store.loadState(key,slot,CORE_REVISION);
   if(!record)throw Error('No saved checkpoint exists in that slot.');
   const result=withBytes(record.bytes,(ptr,length)=>core._b1_state_load(ptr,length));
@@ -106,7 +108,7 @@ async function openROM(rom,isDiagnostic=false,retained={}){
   saveQueue=isDiagnostic?null:new SaveQueue((data,rev)=>store.save(key,data,rev),status=>send('save',{
     ...status,state:status.state==='persisted'&&status.revision!==core._b1_revision()?'dirty':status.state}));
   if(!isDiagnostic){if(!retained.retained){await store.put('roms',key,{bytes:rom});await store.put('roms','last',key);}
-    stateQueues={auto:checkpointQueue('auto',key),quick:checkpointQueue('quick',key)};
+    stateQueues=Object.fromEntries(['auto','quick',...USER_STATE_SLOTS].map(slot=>[slot,checkpointQueue(slot,key)]));
     leaseTimer=setInterval(()=>store.lease(key).catch(fault),5000);}
   const checkpoints=isDiagnostic?{}:await store.stateOptions(key,CORE_REVISION);
   send('loaded',{diagnostic,hasSave:!!saved,recovered:!!saved?.recovered,checkpoints,romBytes:rom?.length||0,gameCode:isDiagnostic?'TEST':String.fromCharCode(...rom.slice(12,16))});
@@ -133,6 +135,15 @@ onmessage=({data})=>{
         break;
       case 'persist':if(saveQueue){await store.lease(key);await saveQueue.flush();await copySave(true);}break;
       case 'quick-save':try{await saveCheckpoint('quick');}catch(error){checkpointInfo('quick',{state:'failed',at:Date.now(),message:error.message});}break;
+      case 'save-state':{
+        if(!USER_STATE_SLOTS.includes(data.slot))throw Error('Choose one of the four user save-state slots.');
+        await saveCheckpoint(data.slot);send('state-options',{options:await store.stateOptions(key,CORE_REVISION)});break;
+      }
+      case 'delete-state':{
+        if(!USER_STATE_SLOTS.includes(data.slot))throw Error('Choose one of the four user save-state slots.');
+        await store.deleteState(key,data.slot);send('state-options',{options:await store.stateOptions(key,CORE_REVISION)});break;
+      }
+      case 'get-state-options':send('state-options',{options:await store.stateOptions(key,CORE_REVISION)});break;
       case 'restore-state':await restoreCheckpoint(data.slot);break;
       case 'retry-state':{const queue=stateQueues[data.slot];if(!queue)throw Error('No pending checkpoint is available to retry.');await store.lease(key);await queue.flush();break;}
       case 'export':{pause();const data=saveBytes();send('export',{bytes:data},[data.buffer]);break;}
