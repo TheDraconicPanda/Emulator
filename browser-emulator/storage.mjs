@@ -69,7 +69,7 @@ export class Store {
     });
   }
   async loadState(romHash,slot,coreRevision){
-    if(!['auto','quick'].includes(slot))throw Error('Unknown emulator checkpoint slot.');
+    if(!STATE_SLOTS.includes(slot))throw Error('Unknown emulator checkpoint slot.');
     const record=await this.get('states',`${romHash}:${slot}`);if(!record)return null;
     for(const name of ['current','previous']){
       const state=record[name];if(!state||!validStateBytes(state.bytes,state.meta,romHash,slot,coreRevision))continue;
