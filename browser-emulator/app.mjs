@@ -212,6 +212,7 @@ worker.onmessage=({data})=>{
     case 'state-restored':
       busy=false;$('checkpoint-dialog').close();$('pause-menu').close();$('save-states-dialog').close();checkpointFailures.clear();
       const restoredLabel=data.slot==='quick'?'Quick Save':data.slot==='auto'?'Automatic recovery':`Save State ${Number(String(data.slot).replace('slot',''))}`;
+      $('state-status').dataset.restoredSlot=data.slot;
       $('state-status').textContent=`Restored ${restoredLabel} from ${checkpointTime(data.at)}${data.recovered?' (previous valid copy)':''}.`;
       status('Full emulator state restored. Resuming muted…');controls();send('resume');break;
     case 'export':{
