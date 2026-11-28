@@ -254,3 +254,13 @@ body.playing .audio-icon .mute-slash{display:none}body.playing .audio-toggle.mut
   body.playing .hands{transform:translateY(30px)}
   body.playing .system{transform:translateY(-2px)}
 }
+
+
+/* Keep mobile gameplay controls free of native text selection and iOS callouts. */
+.controls button,
+.controls [data-key]{
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
