@@ -54,11 +54,11 @@ function renderStateSlots(options=stateOptions){
     const heading=document.createElement('h3');heading.textContent=`Save State ${i}`;
     const detail=document.createElement('p');detail.textContent=info?.at?`Saved ${checkpointTime(info.at)}${info.recovered?' · recovered previous copy':''} · ${(info.length/1048576).toFixed(1)} MiB`:info?.error?`Unavailable: ${info.error}`:'Empty';
     const actions=document.createElement('div');actions.className='toolbar';
-    const save=document.createElement('button');save.textContent=info?.at?'Overwrite':'Save here';save.disabled=busy||!!info?.error;
-    save.onclick=()=>{if(info?.at&&!confirm(`Overwrite Save State ${i}? This cannot be undone.`))return;busy=true;controls();detail.textContent='Capturing and saving…';send('save-state',{slot});};
+    const save=document.createElement('button');save.textContent=info?.at?'Overwrite':info?.error?'Replace invalid':'Save here';save.disabled=busy;
+    save.onclick=()=>{if((info?.at||info?.error)&&!confirm(`${info?.at?'Overwrite':'Replace'} Save State ${i}? This cannot be undone.`))return;busy=true;controls();detail.textContent='Capturing and saving…';send('save-state',{slot});};
     const load=document.createElement('button');load.textContent='Load';load.disabled=busy||!info?.at||!!info?.error;
     load.onclick=()=>{if(!confirm(`Load Save State ${i}? Your current session will first be saved to Automatic Recovery.`))return;busy=true;controls();send('restore-state',{slot});};
-    const remove=document.createElement('button');remove.textContent='Delete';remove.disabled=busy||!info?.at;
+    const remove=document.createElement('button');remove.textContent='Delete';remove.disabled=busy||(!info?.at&&!info?.error);
     remove.onclick=()=>{if(!confirm(`Delete Save State ${i}?`))return;busy=true;controls();send('delete-state',{slot});};
     actions.append(save,load,remove);row.append(heading,detail,actions);host.append(row);
   }
@@ -200,12 +200,13 @@ worker.onmessage=({data})=>{
       $('save-status').textContent=data.state==='persisted'?`Persisted browser snapshot at ${new Date(data.at).toLocaleTimeString()} (${data.ms.toFixed(1)} ms). Finish the in-game save, then export a backup.`:
         data.state==='failed'?'Persistence failed. RAM retained. Export now, free storage, then retry.':data.state==='dirty'?'Cartridge changed — persistence pending…':'Writing browser snapshot…';renderMetrics();break;
     case 'checkpoint':
+      const checkpointLabel=data.slot==='quick'?'Quick Save':data.slot==='auto'?'Automatic recovery':`Save State ${Number(String(data.slot).replace('slot',''))}`;
       if(data.state==='persisted'){
-        checkpointFailures.delete(data.slot);stateHealth={...data,failures:stateHealth.failures||0};$('state-status').textContent=`${data.slot==='quick'?'Quick Save':'Automatic recovery'} saved locally at ${checkpointTime(data.at)} · ${(data.length/1048576).toFixed(1)} MiB · ${(data.captureMs||0).toFixed(0)} ms capture / ${(data.ms||0).toFixed(0)} ms storage.`;
+        checkpointFailures.delete(data.slot);stateHealth={...data,failures:stateHealth.failures||0};$('state-status').textContent=`${checkpointLabel} saved locally at ${checkpointTime(data.at)} · ${(data.length/1048576).toFixed(1)} MiB · ${(data.captureMs||0).toFixed(0)} ms capture / ${(data.ms||0).toFixed(0)} ms storage.`;
         $('quick-save').classList.toggle('saved',data.slot==='quick');setTimeout(()=>$('quick-save').classList.remove('saved'),1800);
       }else if(data.state==='failed'){
-        checkpointFailures.add(data.slot);stateHealth={...stateHealth,failures:(stateHealth.failures||0)+1};$('state-status').textContent=`${data.slot==='quick'?'Quick Save':'Automatic recovery'} failed: ${data.message||'browser storage unavailable'}.`;
-      }else $('state-status').textContent=data.slot==='quick'?'Writing Quick Save…':'Writing automatic recovery checkpoint…';
+        checkpointFailures.add(data.slot);stateHealth={...stateHealth,failures:(stateHealth.failures||0)+1};$('state-status').textContent=`${checkpointLabel} failed: ${data.message||'browser storage unavailable'}.`;
+      }else $('state-status').textContent=`Writing ${checkpointLabel}…`;
       controls();break;
     case 'state-options':stateOptions=data.options||{};renderStateSlots(stateOptions);busy=false;controls();break;
     case 'state-restored':
