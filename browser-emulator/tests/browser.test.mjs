@@ -80,6 +80,10 @@ test('real Chromium: WASM worker, phone controls, raw import/export, fenced dura
       const corrupt=await a.get('states','synthetic-test:quick');corrupt.current.bytes[16]=9;await a.put('states','synthetic-test:quick',corrupt);
       const old=await a.loadState('synthetic-test','quick','test-core');
       const auto=await a.saveState('synthetic-test','auto',state(3),{coreRevision:'test-core',major:13,minor:0});
+      await a.saveState('synthetic-test','slot1',state(4),{coreRevision:'test-core',major:13,minor:0});
+      const userSlot=await a.loadState('synthetic-test','slot1','test-core');
+      await a.deleteState('synthetic-test','slot1');
+      const deletedUserSlot=await a.loadState('synthetic-test','slot1','test-core');
       const stillSeparate=await a.loadSave('synthetic-test');
       const legacyName='reader-browser-b1-v1-migration-test',legacy=indexedDB.open(legacyName,1);await new Promise((resolve,reject)=>{legacy.onupgradeneeded=()=>{for(const n of ['roms','saves','leases'])legacy.result.createObjectStore(n);};legacy.onsuccess=resolve;legacy.onerror=()=>reject(legacy.error);});
       const legacyTx=legacy.result.transaction('roms','readwrite');legacyTx.objectStore('roms').put({kept:true},'legacy');await new Promise((resolve,reject)=>{legacyTx.oncomplete=resolve;legacyTx.onabort=()=>reject(legacyTx.error);});legacy.result.close();
@@ -88,8 +92,8 @@ test('real Chromium: WASM worker, phone controls, raw import/export, fenced dura
       await a.lease('synthetic-test',true);a.db.close();b.db.close();
       return {fenced,denied,recovered:recovered.recovered,byte:recovered.bytes[0],failed,retried:!q.error,
         stateFallback:old.recovered,stateByte:old.bytes[16],autoSlot:(await auto.meta.slot)==='auto',cartridgeSeparate:stillSeparate.bytes[0]===1,
-        legacyPreserved:preserved,legacyAddedStateStore:hasStates};})()`);
-    assert.deepEqual(result,{fenced:true,denied:true,recovered:true,byte:1,failed:true,retried:true,stateFallback:true,stateByte:1,autoSlot:true,cartridgeSeparate:true,legacyPreserved:true,legacyAddedStateStore:true});
+        legacyPreserved:preserved,legacyAddedStateStore:hasStates,userSlotRoundTrip:userSlot.bytes[16]===4,deletedUserSlot:deletedUserSlot===null};})()`);
+    assert.deepEqual(result,{fenced:true,denied:true,recovered:true,byte:1,failed:true,retried:true,stateFallback:true,stateByte:1,autoSlot:true,cartridgeSeparate:true,legacyPreserved:true,legacyAddedStateStore:true,userSlotRoundTrip:true,deletedUserSlot:true});
     // Quick Save is a separate durable state slot. Then verify automatic checkpoints
     // occur on a timer without requiring another cartridge SRAM write.
     await evaluate(`document.querySelector('#quick-save').click()`);
